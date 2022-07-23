@@ -6,7 +6,6 @@ import io
 import warnings
 from typing import Dict, List, Tuple, Union
 
-import numpy as np
 import pandas as pd
 import requests
 import yfinance as yf
@@ -31,38 +30,60 @@ def get_cdi(
     if proxy:
         dados_cvm = requests.get(url, proxies=proxy, verify=False).text
         cdi = pd.read_json(io.StringIO(dados_cvm))
+    else:
+        dados_cvm = requests.get(url).text
+        cdi = pd.read_json(io.StringIO(dados_cvm))       
     cdi["data"] = pd.to_datetime(cdi["data"], dayfirst=True)
     cdi = cdi.set_index("data")
     cdi = cdi[data_inicio:data_fim] / 100
     cdi.columns = ["CDI"]
     cdi_acumulado = (1 + cdi).cumprod() - 1
-    # cdi_acumulado.iloc[0] = 1
     cdi_acumulado.columns = ["CDI"]
     return cdi, cdi_acumulado
 
 
-import getpass
-import os
+# import getpass
+# import os
 
-user = os.getenv("userid").lower()  # getpass.getuser().lower()
-pwd = getpass.getpass(prompt="Senha: ")
-proxies = {
-    "http": f"http://{user}:{pwd}@proxy.inf.bndes.net:8080",
-    "https": f"https://{user}:{pwd}@proxy.inf.bndes.net:8080",
-}
+# user = os.getenv("userid").lower()  # getpass.getuser().lower()
+# pwd = getpass.getpass(prompt="Senha: ")
+# proxies = {
+#     "http": f"http://{user}:{pwd}@proxy.inf.bndes.net:8080",
+#     "https": f"https://{user}:{pwd}@proxy.inf.bndes.net:8080",
+# }
 
-data_inicio = "2018-01-01"
-data_fim = "2022-07-19"
-cdi, cdi_acumulado = get_cdi(data_inicio, data_fim, proxy=proxies)
-cota_cdi = (cdi["CDI"] / cdi["CDI"].iloc[0]) * 100
+# df = pd.read_csv("/Users/Rafael/Desktop/cotas_normalizadas.csv",index_col=0)
 
-ret_cdi = cdi.pct_change().dropna()
-retorno_acumulado = ((1 + ret_cdi).cumprod() - 1) * 100  # idem cota, mas significa que subiu x vezes o valor inicial. a cota compara com valor inicial de 100.
+# data_inicio = df.index[0]
+# data_fim = df.index[-1]
+# cdi, cdi_acumulado = get_cdi(data_inicio, data_fim, proxy=None)
+# cota_cdi = (cdi["CDI"] / cdi["CDI"].iloc[0]) * 100
 
-T = cdi.shape[0]
-retorno_periodo_anualizado_cdi = ((cdi["CDI"].iloc[-1] / cdi["CDI"].iloc[0]) ** (252 / T) - 1) * 100
-rentabilidade_fundos_acumulada = ((cdi.iloc[-1].values[0])) * 100
-volatilidade_cdi = ret_cdi.std().dropna().values[0] * np.sqrt(252) * 100
+# data = plotar_evolucao(
+#                 df,
+#                 lista_fundos=["XP "],
+#                 figsize=(15, 5),
+#                 ylim=(0, 380),
+#                 color="gray",
+#                 alpha=0.2,
+#                 color_maximo="orange",
+#                 color_minimo="red",
+#                 color_seta_maximo="orange",
+#                 color_seta_minimo="red",
+#                 posicao_texto_maximo=(10, 17),
+#                 posicao_texto_minimo=(10, -20),
+#                 )
+# plt.plot(cota_cdi)
+# plt.title("Evolução dos Fundos")
+# plt.show()
+
+# ret_cdi = cdi.pct_change().dropna()
+# retorno_acumulado = ((1 + ret_cdi).cumprod() - 1) * 100  # idem cota, mas significa que subiu x vezes o valor inicial. a cota compara com valor inicial de 100.
+
+# T = cdi.shape[0]
+# retorno_periodo_anualizado_cdi = ((cdi["CDI"].iloc[-1] / cdi["CDI"].iloc[0]) ** (252 / T) - 1) * 100
+# rentabilidade_fundos_acumulada = ((cdi.iloc[-1].values[0])) * 100
+# volatilidade_cdi = ret_cdi.std().dropna().values[0] * np.sqrt(252) * 100
 
 
 def get_stocks(

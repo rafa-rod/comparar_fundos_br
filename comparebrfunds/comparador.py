@@ -63,13 +63,13 @@ def calcula_rentabilidade_fundos(
             )
 
 
-(
-    risco_retorno,
-    cotas_normalizadas,
-    rentabilidade_media_anualizada,
-    rentabilidade_acumulada_por_ano,
-    rentabilidade_fundos_total,
-) = calcula_rentabilidade_fundos(fundos)
+# (
+#     risco_retorno,
+#     cotas_normalizadas,
+#     rentabilidade_media_anualizada,
+#     rentabilidade_acumulada_por_ano,
+#     rentabilidade_fundos_total,
+# ) = calcula_rentabilidade_fundos(fundos)
 
 
 def melhores_e_piores_fundos(
@@ -78,12 +78,12 @@ def melhores_e_piores_fundos(
     return df.nlargest(num, df.columns[0]), df.nsmallest(num, df.columns[0])
 
 
-melhores_fundos, piores_fundos = melhores_e_piores_fundos(
-    rentabilidade_fundos_total, num=10
-)
-fundos_maior_risco, fundos_menor_risco = melhores_e_piores_fundos(
-    risco_retorno[["volatilidade"]], num=10
-)
+# melhores_fundos, piores_fundos = melhores_e_piores_fundos(
+#     rentabilidade_fundos_total, num=10
+# )
+# fundos_maior_risco, fundos_menor_risco = melhores_e_piores_fundos(
+#     risco_retorno[["volatilidade"]], num=10
+# )
 
 
 def plotar_comparacao_risco_retorno(
@@ -133,31 +133,30 @@ def plotar_comparacao_risco_retorno(
     )
 
 
-df4 = risco_retorno[
-    (risco_retorno["volatilidade"] <= 50)
-    & (risco_retorno["rentabilidade"] >= 0)
-    & (risco_retorno["rentabilidade"] <= 150)
-    ]
+# df4 = risco_retorno[
+#     (risco_retorno["volatilidade"] <= 50)
+#     & (risco_retorno["rentabilidade"] >= 0)
+#     & (risco_retorno["rentabilidade"] <= 150)
+#     ]
 
-plotar_comparacao_risco_retorno(
-                                df4,
-                                (21, 18),
-                                (19, 15),
-                                nome_carteira="BNDES",
-                                nome_benchmark="IBOV",
-                                figsize=(15, 5),
-                                posicao_texto_carteira=(30, 25),
-                                posicao_texto_benchmark=(31, 25),
-                                )
-plt.title("Risco x Retorno - Fundos de Ações")
-plt.ylim(-10, 140)
-plt.xlim(-3, 60)
-plt.show()
-
+# plotar_comparacao_risco_retorno(
+#                                 df4,
+#                                 (21, 18),
+#                                 (19, 15),
+#                                 nome_carteira="BNDES",
+#                                 nome_benchmark="IBOV",
+#                                 figsize=(15, 5),
+#                                 posicao_texto_carteira=(30, 25),
+#                                 posicao_texto_benchmark=(31, 25),
+#                                 )
+# plt.title("Risco x Retorno - Fundos de Ações")
+# plt.ylim(-10, 140)
+# plt.xlim(-3, 60)
+# plt.show()
 
 def plotar_evolucao(
                     df: pd.DataFrame(), lista_fundos: List[str], **opcionais: Any
-                    ) -> None:
+                    ) -> Union[pd.DataFrame, None]:
 
     lista_fundos = [x.upper() for x in lista_fundos]
     cnpj = [x for x in df.columns.tolist() if x.split(" // ")[0] in lista_fundos]
@@ -169,17 +168,15 @@ def plotar_evolucao(
                 if fds in fd:
                     nome.append(fundos)
     colunas = nome + cnpj
-    if nome or cnpj:
-        # legenda = [x.split(" // ")[0] for x in colunas]
-        # legenda = []
+    if len(colunas) > 2:
         data = df[colunas].dropna(axis=1, how="all")
         data = data[data > 0].dropna()
         maximo, minimo = (
             data.iloc[-1:].idxmax(axis=1).values[0],
             data.iloc[-1:].idxmin(axis=1).values[0],
         )
-        # legenda.append(maximo)
-        # legenda.append(minimo)
+        legenda_maximo = maximo.split(" // ")[0]
+        legenda_minimo = minimo.split(" // ")[0]
         data.index = pd.to_datetime(data.index)
         plt.figure(figsize=(opcionais.get("figsize")))
         plt.plot(
@@ -189,9 +186,6 @@ def plotar_evolucao(
         )
         plt.plot(data[maximo], color=opcionais.get("color_maximo"))
         plt.plot(data[minimo], color=opcionais.get("color_minimo"))
-        # sns.lineplot(data=data, palette=opcionais.get("palette"),
-        #             color=opcionais.get("color"),
-        #             alpha=opcionais.get("alpha"), estimator=None)
         plt.ylabel("Cotas\n", rotation=0, labelpad=-20, loc="top")
         plt.xlabel("")
         plt.box(False)
@@ -199,7 +193,7 @@ def plotar_evolucao(
         plt.ylim(opcionais.get("ylim"))
         plt.xlim(opcionais.get("xlim"))
         plt.annotate(
-            maximo,
+            legenda_maximo,
             xy=(data.index[-1], data.iloc[-1:].max(axis=1).values[0]),
             xycoords="data",
             xytext=opcionais.get("posicao_texto_maximo"),
@@ -213,7 +207,7 @@ def plotar_evolucao(
             ),
         )
         plt.annotate(
-            minimo,
+            legenda_minimo,
             xy=(data.index[-1], data.iloc[-1:].min(axis=1).values[0]),
             xycoords="data",
             xytext=opcionais.get("posicao_texto_minimo"),
@@ -226,25 +220,66 @@ def plotar_evolucao(
                 connectionstyle="arc3,rad=-0.1",
             ),
         )
-        # plt.legend(legenda, bbox_to_anchor=(1, 0.4),
-        #          fancybox=True, shadow=True, frameon=False)
-    else:
+        return data
+    elif len(colunas) <=2:
+        data = df[colunas].dropna(axis=1, how="all")
+        data = data[data > 0].dropna()
+        data.index = pd.to_datetime(data.index)
+        plt.figure(figsize=(opcionais.get("figsize")))
+        plt.plot(
+            data,
+            color=opcionais.get("color"),
+            alpha=opcionais.get("alpha"),
+        )
+        plt.ylabel("Cotas\n", rotation=0, labelpad=-20, loc="top")
+        plt.xlabel("")
+        plt.box(False)
+        plt.grid(True, axis="y")
+        plt.ylim(opcionais.get("ylim"))
+        plt.xlim(opcionais.get("xlim"))
+        return data
+    elif not colunas:
         print("Fundo não encontrado")
 
+#df = pd.read_csv("/Users/Rafael/Desktop/cotas_normalizadas.csv",index_col=0)
 
-plotar_evolucao(
-                cotas_normalizadas,
-                lista_fundos=["BRADESCO"],
-                figsize=(15, 5),
-                ylim=(0, 180),
-                color="gray",
-                alpha=0.2,
-                color_maximo="orange",
-                color_minimo="red",
-                color_seta_maximo="orange",
-                color_seta_minimo="red",
-                posicao_texto_maximo=(-150, 17),
-                posicao_texto_minimo=(-150, -20),
-                )
-plt.title("Evolução dos Fundos")
-plt.show()
+# data = plotar_evolucao(
+#                 df,
+#                 lista_fundos=["03.916.081/0001-62","06.916.384/0001-73"],
+#                 figsize=(15, 5),
+#                 ylim=(0, 380),
+#                 color="gray",
+#                 alpha=0.2,
+#                 color_maximo="orange",
+#                 color_minimo="red",
+#                 color_seta_maximo="orange",
+#                 color_seta_minimo="red",
+#                 posicao_texto_maximo=(10, 17),
+#                 posicao_texto_minimo=(10, -20),
+#                 )
+# plt.title("Evolução dos Fundos")
+# plt.show()
+
+# data = plotar_evolucao(
+#                 df,
+#                 lista_fundos=["XP "],
+#                 figsize=(15, 5),
+#                 ylim=(0, 380),
+#                 color="gray",
+#                 alpha=0.2,
+#                 color_maximo="orange",
+#                 color_minimo="red",
+#                 color_seta_maximo="orange",
+#                 color_seta_minimo="red",
+#                 posicao_texto_maximo=(10, 17),
+#                 posicao_texto_minimo=(10, -20),
+#                 )
+# plt.title("Evolução dos Fundos")
+# plt.show()
+
+# melhores = data.iloc[-1:].T.dropna().sort_values(data.index[-1], ascending=False)
+# melhores.columns = ["Evolução"]
+# melhores = melhores.reset_index()
+# melhores[['CNPJ', 'DENOM SOCIAL']] = melhores['index'].str.split(' // ', 1, expand=True)
+# melhores = melhores.drop('index', axis=1)
+# melhores
