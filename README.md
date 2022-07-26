@@ -23,7 +23,6 @@ proxies = {
 ```
 
 ```
-cadastro_fundos = get_fundsregistration()
 cadastro_fundos = get_fundsregistration(classe="Fundo de Ações")
 
 informe_diario_fundos_historico = pd.DataFrame()
