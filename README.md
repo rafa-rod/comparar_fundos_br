@@ -6,10 +6,13 @@
     <a href="https://opensource.org/licenses/MIT">
         <img src="https://img.shields.io/badge/license-MIT-brightgreen.svg"
             alt="MIT license"></a> &nbsp;
+    <a href="https://github.com/psf/black">
+        <img src="https://img.shields.io/badge/code%20style-black-000000.svg"
+            alt="Code style: black"></a> &nbsp;
+    <a href="http://mypy-lang.org/">
+        <img src="http://www.mypy-lang.org/static/mypy_badge.svg"
+            alt="Checked with mypy"></a> &nbsp;
 </p>
-
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
 A biblioteca `comparar_fundos_br` possui uma série de funções que permitem:
 
