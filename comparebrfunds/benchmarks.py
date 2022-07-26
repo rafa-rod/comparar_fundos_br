@@ -17,29 +17,38 @@ pd.set_option("display.max_rows", 100)
 pd.set_option("display.max_columns", 10)
 pd.set_option("display.width", 1000)
 
+import seaborn as sns
+
+sns.set()
+import matplotlib.pyplot as plt
+
 
 def get_cdi(
             data_inicio: str, 
-            data_fim: str, 
+            data_fim: str,
+            benchmark: str = "cdi",
             proxy: Union[Dict[str, str], None] = None
             ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    codigo_bcb = 12
+    if benchmark.upper()=="CDI": codigo_bcb = 12
+    elif benchmark.upper()=="IMA-B": codigo_bcb = 12466
+    elif benchmark.upper()=="IMA-B 5": codigo_bcb = 12467
+    elif benchmark.upper()=="IMA-B 5+": codigo_bcb = 12468
     url = (
         f"http://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo_bcb}/dados?formato=json"
     )
     if proxy:
         dados_cvm = requests.get(url, proxies=proxy, verify=False).text
-        cdi = pd.read_json(io.StringIO(dados_cvm))
     else:
         dados_cvm = requests.get(url).text
-        cdi = pd.read_json(io.StringIO(dados_cvm))       
-    cdi["data"] = pd.to_datetime(cdi["data"], dayfirst=True)
-    cdi = cdi.set_index("data")
-    cdi = cdi[data_inicio:data_fim] / 100
-    cdi.columns = ["CDI"]
-    cdi_acumulado = (1 + cdi).cumprod() - 1
-    cdi_acumulado.columns = ["CDI"]
-    return cdi, cdi_acumulado
+    dados_benchmark = pd.read_json(io.StringIO(dados_cvm))       
+    dados_benchmark["data"] = pd.to_datetime(dados_benchmark["data"], dayfirst=True)
+    dados_benchmark = dados_benchmark.set_index("data")
+    dados_benchmark = dados_benchmark[data_inicio:data_fim] / 100
+    dados_benchmark.columns = ["CDI"]
+    dados_benchmark_acumulado = (1 + dados_benchmark).cumprod()
+    dados_benchmark_acumulado.columns = ["CDI"]
+    dados_benchmark_acumulado.iloc[0] = 1
+    return dados_benchmark, dados_benchmark_acumulado
 
 
 # import getpass
@@ -119,4 +128,22 @@ def get_ibovespa(
         indice_ibov = yf.download("^BVSP", start=data_inicio, end=data_fim, proxy=proxy)
     else:
         indice_ibov = yf.download("^BVSP", start=data_inicio, end=data_fim)
-    return indice_ibov
+    indice_ibov = indice_ibov[["Adj Close"]]
+    retorno_ibov = indice_ibov.pct_change()
+    indice_ibov_acumulado = (1 + retorno_ibov).cumprod()
+    indice_ibov_acumulado.iloc[0] = 1
+    indice_ibov_acumulado.index = pd.to_datetime(indice_ibov_acumulado.index)
+    indice_ibov.index = pd.to_datetime(indice_ibov.index)
+    return indice_ibov, indice_ibov_acumulado
+
+# dados_benchmark, dados_benchmark_acumulado = get_cdi(data_inicio="2018-01-01",
+#                                                      data_fim="2022-07-22",
+#                                                      benchmark="cdi")
+# indice_ibov, indice_ibov_acumulado = get_ibovespa(data_inicio="2018-01-01",
+#                                                   data_fim="2022-07-22")
+# plt.figure(figsize=(15,5))
+# plt.plot(indice_ibov_acumulado*100)
+# plt.plot(dados_benchmark_acumulado*100)
+# plt.box(False)
+# plt.grid(axis="y")
+# plt.show()
