@@ -1,3 +1,7 @@
+<p align="center">
+  <img width=60% src="https://github.com/rafa-rod/comparebrfunds/blob/main/media/maxdd_area.png">
+</p>
+
 A biblioteca `comparar_fundos_br` possui uma série de funções que permitem:
 
 - Capturar dados diários de fundos de investimento;
