@@ -49,6 +49,17 @@ informe_diario_fundos_historico = get_brfunds(anos=range(2021,2022), #somente 20
                                               num_minimo_cotistas=10, 
                                               patriminio_liquido_minimo=1e6, 
                                               proxy=proxies)
+informe_diario_fundos_historico.head()
+```
+
+```
+| DT_COMPTC  | CNPJ - Nome                                       |   CLASSE        |   VL_QUOTA  |  NR_COTST |   VL_PATRIM_LIQ |
+|:-----------|:-------------------------------------------------:|----------------:|------------:|----------:|----------------:|
+| 2022-01-03 | 28.144.770/0001-27 // SAFRA FARADAY AÇÕES FUND... |  Fundo de Ações |  147.689974 |      7144 |   1085967556.96 | 
+| 2022-01-03 | 28.122.142/0001-40 // XP INVESTOR IBOVESPA ATI... |  Fundo de Ações |  1.402952   |      7401 |     59237924.90 |
+| 2022-01-03 | 28.098.599/0001-67 // HAWK FUNDO DE INVESTIMEN... |  Fundo de Ações |  1.963080   |        12 |     94788040.60 |
+| 2022-01-03 | 28.076.506/0001-01 // CSHG ALLOCATION EQUITAS ... |  Fundo de Ações |  1.099504   |        78 |     24340094.17 |
+| 2022-01-03 | 28.075.715/0001-22 // CSHG ALLOCATION MILES VI... |  Fundo de Ações |  1.577636   |       107 |    148464847.88 |
 ```
 
 Importante ressaltar que todos os Fundos que são retornados possuem SIT ou situação CVM como "EM FUNCIONAMENTO NORMAL".
@@ -182,9 +193,21 @@ Ainda é possível listar os Fundos de maior e pior desempenho:
 melhores = data.iloc[-1:].T.dropna().sort_values(data.index[-1], ascending=False)
 melhores.columns = ["Evolução"]
 melhores = melhores.reset_index()
-melhores[['CNPJ', 'DENOM SOCIAL']] = melhores['index'].str.split(' // ', 1, expand=True)
-melhores = melhores.drop('index', axis=1)
+melhores[['CNPJ', 'DENOM SOCIAL']] = melhores['CNPJ - Nome'].str.split(' // ', 1, expand=True)
+melhores = melhores.drop('CNPJ - Nome', axis=1)
+melhores.head()
 ```
+
+```
+| Evolução   |         CNPJ       |   DENOM SOCIAL                                       |
+|:-----------|:------------------:|-----------------------------------------------------:|
+| 172.542213 | 10.590.125/0001-72 |  BRADESCO FUNDO DE INVESTIMENTO EM AÇÕES CIELO       | 
+| 127.689792 | 03.916.081/0001-62 |  BRADESCO FUNDO DE INVESTIMENTO EM AÇÕES PETROBRAS   |
+| 127.658068 | 03.922.006/0001-04 |  BRADESCO H FUNDO DE INVESTIMENTO AÇÕES PETROBRAS    |
+| 127.449134 | 17.489.100/0001-26 |  BRADESCO FUNDO DE INVESTIMENTO EM AÇÕES BB SEG...   |
+| 127.296598 | 11.504.894/0001-73 |  BRADESCO FUNDO DE INVESTIMENTO EM AÇÕES - PETR...   |
+```
+
 Também há a possibilidade de listar os piores e melhores Fundos em termos de risco e retorno:
 
 ```python
