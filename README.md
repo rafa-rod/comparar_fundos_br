@@ -110,9 +110,9 @@ plt.ylim(-10, 140)
 plt.xlim(-3, 60)
 plt.show()
 ```
-<p align="center">
-  <img width=60% src="https://github.com/rafa-rod/comparebrfunds/blob/main/media/maxdd_area.png">
-</p>
+<center>
+<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/figura3.png" style="width:100%;"/>
+</center>
 
 Uma outra forma de comparação é utilizando as cotas iniciando em um valor inicial de 100, arbitrário. Assim a comparação fica facilitada.
 
@@ -141,10 +141,9 @@ plt.legend(frameon=False, loc="center right")
 plt.show()
 ```
 
-<p align="center">
-  <img width=60% src="https://github.com/rafa-rod/comparebrfunds/blob/main/media/figura1.png">
-</p>
-
+<center>
+<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/figura1.png" style="width:100%;"/>
+</center>
 
 ```python
 indice_ibov, indice_ibov_acumulado = get_ibovespa("2022-01-01", 
@@ -170,9 +169,9 @@ plt.legend(frameon=False, loc="upper center")
 plt.show()
 ```
 
-<p align="center">
-  <img width=60% src="https://github.com/rafa-rod/comparebrfunds/blob/main/media/figura2.png">
-</p>
+<center>
+<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/figura2.png" style="width:100%;"/>
+</center>
 
 Ainda é possível listar os Fundos de maior e pior desempenho:
 
