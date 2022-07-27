@@ -64,17 +64,17 @@ class TestClass():
             assert str(error7.value) == "Não há dados para esta data. Response [404]"
 
       def test_benchmarks(self):
-            cdi, cdi_acumulado = get_cdi("2022-01-01", "2022-07-01", proxy=self.proxy)
+            cdi, cdi_acumulado = get_benchmark("2022-01-01", "2022-07-01", proxy=self.proxy)
             assert isinstance(cdi, pd.core.frame.DataFrame)
             assert isinstance(cdi_acumulado, pd.core.frame.DataFrame)
-            ibov, indice_ibov_acumulado = get_ibovespa("2022-01-01", "2022-07-01", proxy=self.proxy)
+            ibov, indice_ibov_acumulado = get_benchmark("2022-01-01", "2022-07-01", benchmark="ibov", proxy=self.proxy)
             assert isinstance(ibov, pd.core.frame.DataFrame)
             stocks = get_stocks(["PETR4, VALE3"],"2022-01-01", "2022-07-01", proxy=self.proxy)
             assert isinstance(stocks, pd.core.frame.DataFrame)
             stocks1 = get_stocks("PETR4","2022-01-01", "2022-07-01", proxy=self.proxy)
             assert isinstance(stocks1, pd.core.frame.DataFrame)
             with pytest.raises(Exception) as error8:
-                cdi, cdi_acumulado = get_cdi("2022-01-01", "2022-07-01", benchmark="selic", proxy=self.proxy)
+                cdi, cdi_acumulado = get_benchmark("2022-01-01", "2022-07-01", benchmark="selic", proxy=self.proxy)
             assert str(error8.value) == "Benchmark não encontrado."
 
       def comparador(self):

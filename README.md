@@ -14,7 +14,7 @@
             alt="Checked with mypy"></a> &nbsp;
 </p>
 
-A biblioteca `comparar_fundos_br` possui uma série de funções que permitem:
+A biblioteca **comparar_fundos_br** possui uma série de funções que permitem:
 
 - Capturar dados diários de fundos de investimento;
 - Filtrar fundos por classe CVM (ex Fundos de Ações, Fundos de Renda Fixa, etc);
@@ -37,13 +37,15 @@ porta = 3128
 proxies = {
     "http": f"http://{user}:{pwd}@{proxy}:{porta}",
     "https": f"https://{user}:{pwd}@{proxy}:{porta}",
-		}
+        }
 ```
 
 Veja a seguir um exemplo para capturar dados dos Fundos de Investimento com seus respectivos filtros.
 
 ```python
-informe_diario_fundos_historico = get_brfunds(anos=range(2021,2022), #somente 2021
+import comparar_fundos_br as comp
+
+informe_diario_fundos_historico = comp.get_brfunds(anos=range(2021,2022), #somente 2021
                                               meses=range(1,3), #somente Jan e Fev
                                               classe="Fundo de Ações", 
                                               num_minimo_cotistas=10, 
@@ -68,7 +70,7 @@ Se desejar capturar todas as classes de fundos, basta não restringir a variáve
 também não há restrições sobre fundos com número de cotistas, tampouco sobre o patrimônio líquido. Nesse exemplo, não está sendo utilizada a configuração da proxy.
 
 ```python
-informe_diario_fundos_historico = get_brfunds(anos=range(2021,2022), #somente 2021
+informe_diario_fundos_historico = comp.get_brfunds(anos=range(2021,2022), #somente 2021
                                               meses=range(1,3), #somente Jan e Fev)
 ```
 O exemplo acima demora mais para ser executado, uma vez que obtém todos os Fundos dentro do período selecionado. 
@@ -77,12 +79,12 @@ Caso deseje, por exemplo, apenas algunas classes de Fundos, como: Fundos de Aç�
 Também é possível consultar os tipos de classe disponíveis.
 
 ```python
-informe_diario_fundos_historico = get_brfunds(anos=range(2021,2022), #somente 2021
+informe_diario_fundos_historico = comp.get_brfunds(anos=range(2021,2022), #somente 2021
                                               meses=range(1,3), #somente Jan e Fev,
                                               classe=["Fundo de Renda Fixa","Fundo de Ações"])
 
 #Para obter as classes disponíveis:
-get_classes()
+comp.get_classes()
 ```
 
 Para obter o retorno dos Fundos, chame a função `calcula_rentabilidade_fundos` passando os dados dos fundos que acabou de obter.
@@ -93,7 +95,7 @@ Para obter o retorno dos Fundos, chame a função `calcula_rentabilidade_fundos`
     rentabilidade_media_anualizada,
     rentabilidade_acumulada_por_ano,
     rentabilidade_fundos_total,
-) = calcula_rentabilidade_fundos(informe_diario_fundos_historico)
+) = comp.calcula_rentabilidade_fundos(informe_diario_fundos_historico)
 ```
 
 O primeiro dataframe indica tanto o risco (volatidade padrão) de cada fundo, por CNPJ, quanto sua rentabilidade, ambos anualizados. Já o segundo dataframe retorna o valor das cotas dos fundos normalizadas no período selecionado, o que facilita para comparação (veja a seguir nos gráficos).
@@ -109,7 +111,7 @@ df4 = risco_retorno[
                     & (risco_retorno["rentabilidade"] <= 100)
                     ]
 
-plotar_comparacao_risco_retorno(
+comp.plotar_comparacao_risco_retorno(
                                 df4,
                                 (21, 18), #(risco, retorno) da minha carteira
                                 (19, 15), #(risco, retorno) do benchmark
@@ -137,12 +139,12 @@ Para facilitar a comparação, você pode personalizar o gráfico para destacar 
 Os benchmarks disponíveis são: CDI, IMA-B, IMA-B 5, IMA-B 5+, Ibovespa e Ações diversas listadas na B3.
 
 ```python
-cdi, cdi_acumulado = get_cdi("2022-01-01", 
-                              "2022-07-22", 
-                              benchmark = "cdi", 
-                              proxy=proxies)
+cdi, cdi_acumulado = comp.get_benchmark("2022-01-01", 
+                                        "2022-07-22", 
+                                        benchmark = "cdi", 
+                                        proxy=proxies)
 
-data = plotar_evolucao(
+data = comp.plotar_evolucao(
                 cotas_normalizadas,
                 lista_fundos=["03.916.081/0001-62","06.916.384/0001-73"],
                 figsize=(15, 5),
@@ -160,11 +162,12 @@ plt.show()
 </center>
 
 ```python
-indice_ibov, indice_ibov_acumulado = get_ibovespa("2022-01-01", 
-                                                  "2022-07-25", 
-                                                  proxy=proxies)
+indice_ibov, indice_ibov_acumulado = comp.get_benchmark("2022-01-01", 
+                                                        "2022-07-25", 
+                                                        benchmark = "ibov",
+                                                        proxy=proxies)
 
-data = plotar_evolucao(
+data = comp.plotar_evolucao(
                 cotas_normalizadas,
                 lista_fundos=["Bradesco"],
                 figsize=(15, 5),
@@ -211,23 +214,23 @@ melhores.head()
 Também há a possibilidade de listar os piores e melhores Fundos em termos de risco e retorno:
 
 ```python
-melhores_fundos, piores_fundos = melhores_e_piores_fundos(rentabilidade_fundos_total, num=10)
+melhores_fundos, piores_fundos = comp.melhores_e_piores_fundos(rentabilidade_fundos_total, num=10)
 
-fundos_maior_risco, fundos_menor_risco = melhores_e_piores_fundos(risco_retorno[["volatilidade"]], num=10)
+fundos_maior_risco, fundos_menor_risco = comp.melhores_e_piores_fundos(risco_retorno[["volatilidade"]], num=10)
 ```
 
 Para Fundos de Participação (FIPs) e Fundos de Direitos Creditórios (FIDCs), a sistemática é diferente. Enquanto os FIPs tem seus resultados divulgados trimestralmente, os FIDCs são mensalmente divulgados. Assim, para obte-los, basta codar:
 
 ```python
 #Informe apenas o ano para obter os dados de FIPs disponíveis
-fip = get_fip(2022)
+fip = comp.get_fip(2022)
 
 #Para FIDCs informe ano e mês
 informe_fidcs_all = pd.DataFrame()
 for ano in [2020, 2021]:
     for mes in range(1, 13):
         print(f"Data {mes}/{ano}")
-        informe_fidcs = get_fidc(ano, mes)
+        informe_fidcs = comp.get_fidc(ano, mes)
         if not informe_fidcs.empty:
             informe_fidcs_all = pd.concat([informe_fidcs_all, informe_fidcs])
 ```

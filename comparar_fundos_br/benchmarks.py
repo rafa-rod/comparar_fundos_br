@@ -21,7 +21,24 @@ import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
 
 
-def get_cdi(
+def get_ibovespa(
+            data_inicio: str, 
+            data_fim: str, 
+            proxy: Union[Dict[str, str], None] = None
+            ) -> pd.DataFrame:
+    if proxy:
+        indice_ibov = yf.download("^BVSP", start=data_inicio, end=data_fim, proxy=proxy)
+    else:
+        indice_ibov = yf.download("^BVSP", start=data_inicio, end=data_fim)
+    indice_ibov = indice_ibov[["Adj Close"]]
+    retorno_ibov = indice_ibov.pct_change()
+    indice_ibov_acumulado = (1 + retorno_ibov).cumprod()
+    indice_ibov_acumulado.iloc[0] = 1
+    indice_ibov_acumulado.index = pd.to_datetime(indice_ibov_acumulado.index)
+    indice_ibov.index = pd.to_datetime(indice_ibov.index)
+    return indice_ibov, indice_ibov_acumulado
+
+def get_benchmark(
             data_inicio: str, 
             data_fim: str,
             benchmark: str = "cdi",
@@ -31,6 +48,9 @@ def get_cdi(
     elif benchmark.upper()=="IMA-B": codigo_bcb = 12466
     elif benchmark.upper()=="IMA-B 5": codigo_bcb = 12467
     elif benchmark.upper()=="IMA-B 5+": codigo_bcb = 12468
+    elif benchmark.upper()=="IBOV":
+        indice_ibov, indice_ibov_acumulado = get_ibovespa(data_inicio, data_fim, proxy)
+        return indice_ibov, indice_ibov_acumulado
     else: raise ValueError("Benchmark não encontrado.")
     url = (
         f"http://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo_bcb}/dados?formato=json"
@@ -75,21 +95,3 @@ def get_stocks(
             df1 = yf.download(acoes, start=data_inicio, end=data_fim)
     df1.index = pd.to_datetime(df1.index)
     return df1
-
-
-def get_ibovespa(
-            data_inicio: str, 
-            data_fim: str, 
-            proxy: Union[Dict[str, str], None] = None
-            ) -> pd.DataFrame:
-    if proxy:
-        indice_ibov = yf.download("^BVSP", start=data_inicio, end=data_fim, proxy=proxy)
-    else:
-        indice_ibov = yf.download("^BVSP", start=data_inicio, end=data_fim)
-    indice_ibov = indice_ibov[["Adj Close"]]
-    retorno_ibov = indice_ibov.pct_change()
-    indice_ibov_acumulado = (1 + retorno_ibov).cumprod()
-    indice_ibov_acumulado.iloc[0] = 1
-    indice_ibov_acumulado.index = pd.to_datetime(indice_ibov_acumulado.index)
-    indice_ibov.index = pd.to_datetime(indice_ibov.index)
-    return indice_ibov, indice_ibov_acumulado
