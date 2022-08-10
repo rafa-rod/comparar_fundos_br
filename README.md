@@ -25,6 +25,12 @@ A biblioteca **comparar_fundos_br** possui uma série de funções que permitem:
 - Comparar fundos com sua carteira de investimentos;
 - Plotar gráficos de comparação e evolução dos fundos em período específico juntamente com seus benchmarks.
 
+### Instalação
+
+```sh
+pip install comparar_fundos_br
+```
+
 Caso necessite utilizar proxy, inicie com o código abaixo:
 
 ```python
