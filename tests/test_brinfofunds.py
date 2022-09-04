@@ -17,12 +17,7 @@ from comparar_fundos_br import *
 class TestClass():
 
       def __init__(self):
-            user = os.getenv("userid").lower()
-            senha = ""
-            self.proxy = {
-                        "http": f"http://{user}:{senha}@proxy.inf.bndes.net:8080",
-                        "https": f"https://{user}:{senha}@proxy.inf.bndes.net:8080",
-                        }
+            self.proxy=False
             self.test_getfunds()
             self.test_benchmarks()
             self.comparador()
