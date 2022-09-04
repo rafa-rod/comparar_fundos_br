@@ -71,7 +71,7 @@ def get_fundsregistration(
         if check_classes:
             raise ValueError(f"Classe não encontrada {check_classes}")
         df_filtrado = df_filtrado[df_filtrado["CLASSE"].isin(classe)]
-        print(f"Cadastro fnalizado em {round((time.time()-start)/60,2)} minutos")
+        print(f"Cadastro finalizado em {round((time.time()-start)/60,2)} minutos")
     return df_filtrado
 
 def _mesclar_bases(cadastro_fundos: pd.DataFrame, informe_diario_fundos: pd.DataFrame) -> pd.DataFrame:
