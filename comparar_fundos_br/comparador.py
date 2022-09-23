@@ -41,7 +41,7 @@ def calcula_rentabilidade_fundos(
     rentabilidade_media_anualizada.columns = ["rentabilidade"]
 
     T = fundo_acoes_filtrado_transformed.shape[0]
-    retorno_periodo_anualizado = (((fundo_acoes_filtrado_transformed["VL_QUOTA"].iloc[-1]/ fundo_acoes_filtrado_transformed["VL_QUOTA"].iloc[0])** (252 / T)- 1)* 100).dropna().to_frame()
+    retorno_periodo_anualizado = (((fundo_acoes_filtrado_transformed["VL_QUOTA"].iloc[-1]/ fundo_acoes_filtrado_transformed["VL_QUOTA"].iloc[0])** (252 / T)- 1)).dropna().to_frame()
     retorno_periodo_anualizado.columns = ["rentabilidade"]
 
     rentabilidade_acumulada_por_ano = (rentabilidade_fundos_acumulada.groupby(pd.Grouper(freq="Y")).last(1).T.dropna())
