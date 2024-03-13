@@ -42,7 +42,7 @@ proxy = "10.10.1.10"
 porta = 3128
 proxies = {
     "http": f"http://{user}:{pwd}@{proxy}:{porta}",
-    "https": f"https://{user}:{pwd}@{proxy}:{porta}",
+    "https": f"http://{user}:{pwd}@{proxy}:{porta}",
         }
 ```
 
