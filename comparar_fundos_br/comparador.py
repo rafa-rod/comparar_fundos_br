@@ -19,7 +19,7 @@ import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
 
 def _get_valores_iniciais(df: pd.DataFrame) -> List[float]:
-    valores_iniciais = [df.iloc[:,i].dropna().iloc[0] for x in tqdm(range(df.shape[1]))]
+    valores_iniciais = [df.iloc[:,x].dropna().iloc[0] for x in tqdm(range(df.shape[1]))]
     return np.array(valores_iniciais)
     
 def calcula_rentabilidade_fundos(
