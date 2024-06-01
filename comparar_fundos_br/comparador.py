@@ -18,20 +18,23 @@ pd.set_option("display.width", 1000)
 import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
 
-
+def _get_valores_iniciais(df: pd.DataFrame) -> List[float]:
+    valores_iniciais = [df.iloc[:,i].dropna().iloc[0] for x in tqdm(range(df.shape[1]))]
+    return np.array(valores_iniciais)
+    
 def calcula_rentabilidade_fundos(
     dados_fundos_cvm: pd.DataFrame,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     copia = dados_fundos_cvm.copy()
     fundo_acoes_filtrado_transformed = copia.pivot_table(
-        index="DT_COMPTC", columns="CNPJ - Nome", values=["VL_QUOTA", "VL_PATRIM_LIQ"]
+        index="DT_COMPTC", columns="CNPJ - Nome", values="VL_QUOTA"
     )
     fundo_acoes_filtrado_transformed.index = pd.to_datetime(fundo_acoes_filtrado_transformed.index)
     fundo_acoes_filtrado_transformed = fundo_acoes_filtrado_transformed.sort_index()
 
-    cotas_normalizadas = (fundo_acoes_filtrado_transformed["VL_QUOTA"]/ fundo_acoes_filtrado_transformed["VL_QUOTA"].iloc[0])
+    cotas_normalizadas = (fundo_acoes_filtrado_transformed/ _get_valores_iniciais(fundo_acoes_filtrado_transformed))
 
-    rentabilidade_fundos_diaria = fundo_acoes_filtrado_transformed["VL_QUOTA"].pct_change()
+    rentabilidade_fundos_diaria = fundo_acoes_filtrado_transformed.pct_change()
 
     rentabilidade_fundos_acumulada = (1 + rentabilidade_fundos_diaria).cumprod() - 1
     rentabilidade_fundos_total = rentabilidade_fundos_acumulada.iloc[-1].to_frame()
@@ -41,7 +44,7 @@ def calcula_rentabilidade_fundos(
     rentabilidade_media_anualizada.columns = ["rentabilidade"]
 
     T = fundo_acoes_filtrado_transformed.shape[0]
-    retorno_periodo_anualizado = (((fundo_acoes_filtrado_transformed["VL_QUOTA"].iloc[-1]/ fundo_acoes_filtrado_transformed["VL_QUOTA"].iloc[0])** (252 / T)- 1)).dropna().to_frame()
+    retorno_periodo_anualizado = (((fundo_acoes_filtrado_transformed.iloc[-1]/ _get_valores_iniciais(fundo_acoes_filtrado_transformed))** (252 / T)- 1)).dropna().to_frame()
     retorno_periodo_anualizado.columns = ["rentabilidade"]
 
     rentabilidade_acumulada_por_ano = (rentabilidade_fundos_acumulada.groupby(pd.Grouper(freq="Y")).last(1).T.dropna())
