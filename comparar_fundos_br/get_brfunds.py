@@ -23,27 +23,11 @@ pd.set_option("display.width", 1000)
 
 def get_classes() -> List[str]:
     return [
-	        "Fundo de Renda Fixa",
-	        "Fundo de Ações",
-	        "Fundo Multimercado",
-	        "Fundo Cambial",
-	        "FMP-FGTS",
-	        "FIDC",
-	        "FIDC-NP",
-	        "FIC FIDC",
-	        "FICFIDC-NP",
-	        "FIDCFIAGRO",
-	        "FII",
-	        "FII-FIAGRO",
-	        "FIP",
-	        "FIP EE",
-	        "FIP Multi",
-	        "FIC FIP",
-	        "FIP CS",
-	        "FIP IE",
-	        "FIP-FIAGRO",
-	        "FUNCINE",
-	    	]
+        'Renda Fixa', 'Ações', 'Multimercado', 'Cambial', 'FMP-FGTS',
+        'FIDC', 'FIDC-NP', 'FIC FIDC', 'FICFIDC-NP', 'FIDCFIAGRO', 'FII',
+        'FII-FIAGRO', 'FIP EE', 'FIP', 'FIP Multi', 'FIP CS', 'FIP-FIAGRO',
+        'FIC FIP', 'FIP IE', 'FUNCINE'
+        ]
 
 
 def get_fundsregistration(

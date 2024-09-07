@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple, Union
 import pandas as pd
 import requests
 import yfinance as yf
+import tesouro_direto_br as tesouro_direto
 
 warnings.filterwarnings("ignore")
 
@@ -20,6 +21,19 @@ pd.set_option("display.width", 1000)
 import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
 
+def get_selic(inicio: str, fim: str, proxies: Union[Dict[str, str], None] = None) -> pd.DataFrame:
+    titulos_ofertados = tesouro_direto.busca_tesouro_direto(tipo="taxa", proxies=proxies, agrupar=True).reset_index()
+
+    excluir = ["Juros Semestrais", "Renda+", "Educa+"]
+    titulos_ofertados_filtrado = titulos_ofertados[(titulos_ofertados["Data Base"]>=inicio) &
+                                       (titulos_ofertados["Data Base"]<fim) &
+                                       (~titulos_ofertados["Tipo Titulo"].str.contains("&".join(excluir)))].set_index(["Tipo Titulo",
+                                                                                        "Data Vencimento"])
+    selic = titulos_ofertados_filtrado.loc[["Tesouro Selic"], :].sort_values("Data Base", ascending=False)
+    selic_longa = selic.reset_index().groupby(["Data Base"])[["Data Vencimento", 
+                                                'Taxa Compra Manha', 'Taxa Venda Manha', 
+                                                'PU Compra Manha', 'PU Venda Manha', 'PU Base Manha']].max()
+    return selic_longa[["PU Base Manha"]]
 
 def get_ibovespa(
             data_inicio: str, 
@@ -68,7 +82,6 @@ def get_benchmark(
     dados_benchmark_acumulado.columns = ["CDI"]
     dados_benchmark_acumulado.iloc[0] = 1
     return dados_benchmark, dados_benchmark_acumulado
-
 
 def get_stocks(
                 acoes: Union[List[str], str],

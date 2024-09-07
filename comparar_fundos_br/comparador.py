@@ -2,8 +2,9 @@
 """
 @author: Rafael
 """
+from comparar_fundos_br.benchmarks import *
 import warnings
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Tuple, Union, Dict
 
 import numpy as np
 import pandas as pd
@@ -15,22 +16,58 @@ pd.set_option("display.max_rows", 100)
 pd.set_option("display.max_columns", 10)
 pd.set_option("display.width", 1000)
 
-import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.style.use("fivethirtyeight")
 
-def _get_valores_iniciais(df: pd.DataFrame) -> List[float]:
-    valores_iniciais = [df.iloc[:,x].dropna().iloc[0] for x in tqdm(range(df.shape[1]))]
-    return np.array(valores_iniciais)
+def _get_valores_iniciais(df: pd.DataFrame) -> pd.Series:
+    return df[~df.isnull()].iloc[0]
+
+def get_cotas_normalizadas(df: pd.DataFrame) -> pd.DataFrame:
+    valor_inicial = _get_valores_iniciais(df)
+    cotas_normalizadas = df/valor_inicial
+    return cotas_normalizadas
+
+def get_benchmarks(data_inicio: str, data_fim: str, proxies: Union[Dict[str, str], None] = None, benchmark: str="cdi") -> pd.DataFrame:
+    if benchmark.upper()=="CDI":
+        df_benchmark = get_selic(data_inicio, data_fim, proxies)
+        df_benchmark.columns = [benchmark.upper()]
+    else:
+        df_benchmark, _ = get_benchmark(data_inicio, 
+                                        data_fim, 
+                                        benchmark = benchmark.upper(), proxy=proxies)
+        df_benchmark.columns = [benchmark.upper()]
+    return df_benchmark
+
+def calcula_retorno(df: pd.DataFrame, fundo: List[str], HP: int, benchmark: pd.DataFrame) -> pd.DataFrame:
+    cotas_normalizadas = get_cotas_normalizadas(df[fundo])
+    retorno_cotas_normalizadas = pd.concat([cotas_normalizadas, benchmark], axis=1)
+    retorno_cotas_normalizadas = retorno_cotas_normalizadas.pct_change(HP)
+    return retorno_cotas_normalizadas
+
+def fundos_eficientes(df: pd.DataFrame, fundos: List[str], HP: int, benchmarks: pd.DataFrame) -> pd.DataFrame:
+    melhores = pd.DataFrame()
+    for fundo in fundos:
+        retorno = calcula_retorno(df, fundo, HP, benchmarks)
+        df2 = pd.DataFrame()
+        for benc in benchmarks.columns:
+            retorno[f"Bateu {benc}"] = np.where(retorno[fundo]>retorno[benc], 1, 0)
+            df1 = pd.DataFrame({"Fundo": [fundo],
+                               f"Num. vezes superou {benc}": [retorno[f"Bateu {benc}"].sum()]}).set_index("Fundo")
+            df1[f"Eficiência {benc} (%)"] = 100*(df1[f"Num. vezes superou {benc}"]/retorno.dropna().shape[0])
+            df2 = pd.concat([df1, df2], axis=1)    
+        melhores = pd.concat([melhores, df2])
+    return melhores
     
 def calcula_rentabilidade_fundos(
     dados_fundos_cvm: pd.DataFrame,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    copia = dados_fundos_cvm.copy()
-    fundo_acoes_filtrado_transformed = copia.pivot_table(
-        index="DT_COMPTC", columns="CNPJ - Nome", values="VL_QUOTA"
-    )
-    fundo_acoes_filtrado_transformed.index = pd.to_datetime(fundo_acoes_filtrado_transformed.index)
-    fundo_acoes_filtrado_transformed = fundo_acoes_filtrado_transformed.sort_index()
+    fundo_acoes_filtrado_transformed = dados_fundos_cvm.copy()
+    #fundo_acoes_filtrado_transformed = copia.pivot_table(
+    #    index="DT_COMPTC", columns="CNPJ - Nome", values="VL_QUOTA"
+    #)
+    #fundo_acoes_filtrado_transformed.index = pd.to_datetime(fundo_acoes_filtrado_transformed.index)
+    #fundo_acoes_filtrado_transformed = fundo_acoes_filtrado_transformed.sort_index()
 
     cotas_normalizadas = (fundo_acoes_filtrado_transformed/ _get_valores_iniciais(fundo_acoes_filtrado_transformed))
 
@@ -63,13 +100,19 @@ def calcula_rentabilidade_fundos(
             )
 
 def melhores_e_piores_fundos(
-                            df: pd.DataFrame(), num: int = 5
+                            df: pd.DataFrame, num: int = 5
                             ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     return df.nlargest(num, df.columns[0]), df.nsmallest(num, df.columns[0])
 
+def remove_outliers(df: pd.DataFrame, col: str, q: float = 0.05) -> pd.DataFrame:
+    df1 = df.copy()
+    upper = df1[col].quantile(1-q)
+    lower = df1[col].quantile(q)
+    df2 =  df1[(df1[col] < upper) & (df1[col] > lower)]
+    return df2
 
 def plotar_comparacao_risco_retorno(
-                                    df: pd.DataFrame(),
+                                    df: pd.DataFrame,
                                     risco_retorno_carteira: Union[Tuple[int, int], None] = None,
                                     risco_retorno_benchmark: Union[Tuple[int, int], None] = None,
                                     nome_carteira: Union[str, None] = None,
@@ -120,7 +163,7 @@ def plotar_comparacao_risco_retorno(
 
 
 def plotar_evolucao(
-                    df: pd.DataFrame(), lista_fundos: List[str], **opcionais: Any
+                    df: pd.DataFrame, lista_fundos: List[str], **opcionais: Any
                     ) -> Union[pd.DataFrame, None]:
 
     lista_fundos = [x.upper() for x in lista_fundos]
@@ -206,3 +249,21 @@ def plotar_evolucao(
     elif not colunas:
         print("Fundo não encontrado")
         return None
+
+def plotar_rentabilidade_janela_movel(df, fundos, HP, benchmarks):
+    for fundo in fundos:
+        retorno = calcula_retorno(df, fundo, HP, benchmarks)
+        
+        plt.figure(figsize=(15, 6))
+        cols = [fundo] + benchmarks.columns.tolist()
+        plt.suptitle(f"Retorno de {HP} dias")
+        plt.plot(retorno[cols].multiply(100))
+        plt.xticks(rotation=45)
+        plt.xlabel('')
+        plt.ylabel("%", rotation=0, labelpad=-15, loc="top")
+        plt.legend([fundo.split("//")[-1]]+benchmarks.columns.tolist(), loc="upper right", frameon=False,
+                     bbox_to_anchor=(0.5, 0.67, 0.5, 0.5))
+        plt.tight_layout()
+        plt.box(False)
+        plt.grid(axis="x")
+    plt.show()
