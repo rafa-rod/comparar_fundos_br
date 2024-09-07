@@ -15,7 +15,7 @@ pytrendseries = "^0.1.9"
 tesouro-direto-br = "^0.3.2"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.4"
+pytest = "^7.2.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
