@@ -60,6 +60,9 @@ def get_fundsregistration(
 
 def _mesclar_bases(cadastro_fundos: pd.DataFrame, informe_diario_fundos: pd.DataFrame) -> pd.DataFrame:
     cadastro_fundos_filtrado = cadastro_fundos[['CNPJ_FUNDO', 'CLASSE', 'DENOM_SOCIAL']]
+    mudar_coluna = [x for x in informe_diario_fundos.columns if x.upper()=="CNPJ_FUNDO_CLASSE"]
+    if mudar_coluna:
+        informe_diario_fundos = informe_diario_fundos.rename(columns={'CNPJ_FUNDO_CLASSE':'CNPJ_FUNDO'})
     dados_completos_filtrados = informe_diario_fundos.merge(cadastro_fundos_filtrado, on=['CNPJ_FUNDO'], how="inner")
     dados_completos_filtrados["CNPJ - Nome"] = dados_completos_filtrados["CNPJ_FUNDO"] + " // " + dados_completos_filtrados["DENOM_SOCIAL"]
     dados_completos_filtrados = dados_completos_filtrados[["CNPJ - Nome", 'DT_COMPTC', 'CLASSE', 'VL_QUOTA', "NR_COTST", "VL_PATRIM_LIQ"]]
