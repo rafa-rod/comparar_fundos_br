@@ -53,7 +53,7 @@ import comparar_fundos_br as comp
 
 informe_diario_fundos_historico = comp.get_brfunds(anos=range(2021,2022), #somente 2021
                                               meses=range(1,3), #somente Jan e Fev
-                                              classe="Fundo de Ações", 
+                                              classe="Ações", 
                                               num_minimo_cotistas=10, 
                                               patriminio_liquido_minimo=1e6, 
                                               proxy=proxies)
@@ -63,11 +63,11 @@ informe_diario_fundos_historico.head()
 ```
 | DT_COMPTC  | CNPJ - Nome                                       |   CLASSE        |   VL_QUOTA  |  NR_COTST |   VL_PATRIM_LIQ |
 |:-----------|:-------------------------------------------------:|----------------:|------------:|----------:|----------------:|
-| 2022-01-03 | 28.144.770/0001-27 // SAFRA FARADAY AÇÕES FUND... |  Fundo de Ações |  147.689974 |      7144 |   1085967556.96 | 
-| 2022-01-03 | 28.122.142/0001-40 // XP INVESTOR IBOVESPA ATI... |  Fundo de Ações |  1.402952   |      7401 |     59237924.90 |
-| 2022-01-03 | 28.098.599/0001-67 // HAWK FUNDO DE INVESTIMEN... |  Fundo de Ações |  1.963080   |        12 |     94788040.60 |
-| 2022-01-03 | 28.076.506/0001-01 // CSHG ALLOCATION EQUITAS ... |  Fundo de Ações |  1.099504   |        78 |     24340094.17 |
-| 2022-01-03 | 28.075.715/0001-22 // CSHG ALLOCATION MILES VI... |  Fundo de Ações |  1.577636   |       107 |    148464847.88 |
+| 2022-01-03 | 28.144.770/0001-27 // SAFRA FARADAY AÇÕES FUND... |  Ações          |  147.689974 |      7144 |   1085967556.96 | 
+| 2022-01-03 | 28.122.142/0001-40 // XP INVESTOR IBOVESPA ATI... |  Ações          |  1.402952   |      7401 |     59237924.90 |
+| 2022-01-03 | 28.098.599/0001-67 // HAWK FUNDO DE INVESTIMEN... |  Ações          |  1.963080   |        12 |     94788040.60 |
+| 2022-01-03 | 28.076.506/0001-01 // CSHG ALLOCATION EQUITAS ... |  Ações          |  1.099504   |        78 |     24340094.17 |
+| 2022-01-03 | 28.075.715/0001-22 // CSHG ALLOCATION MILES VI... |  Ações          |  1.577636   |       107 |    148464847.88 |
 ```
 
 Importante ressaltar que todos os Fundos que são retornados possuem SIT ou situação CVM como "EM FUNCIONAMENTO NORMAL".
@@ -87,7 +87,7 @@ Também é possível consultar os tipos de classe disponíveis.
 ```python
 informe_diario_fundos_historico = comp.get_brfunds(anos=range(2021,2022), #somente 2021
                                               meses=range(1,3), #somente Jan e Fev,
-                                              classe=["Fundo de Renda Fixa","Fundo de Ações"])
+                                              classe=["Renda Fixa", "Ações"])
 
 #Para obter as classes disponíveis:
 comp.get_classes()
