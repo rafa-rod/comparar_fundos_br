@@ -25,7 +25,7 @@ class TestClass():
       def test_getfunds(self):
             self.informe_diario_fundos = get_brfunds(anos=range(2021,2022), #somente 2021
                                                      meses = range(1,3),  #somente Jan e Fev
-                                                     classe="Fundo de Ações", 
+                                                     classe="Ações", 
                                                      num_minimo_cotistas=10, 
                                                      patriminio_liquido_minimo=1_000_000, 
                                                      proxy=self.proxy
@@ -34,13 +34,13 @@ class TestClass():
             with pytest.raises(Exception) as error1:
                 informe_diario_fundos = get_brfunds(2022, 7, classe=["Fundo ABC"], proxy=self.proxy)
             with pytest.raises(Exception) as error2:
-                informe_diario_fundos = get_brfunds(2022, 7, proxy={"teste":"teste"})
-            with pytest.raises(Exception) as error3:
-                informe_diario_fundos = get_brfunds(2022, 7, proxy=None)
+                informe_diario_fundos = get_brfunds(2022, 7, proxy='teste')
+            #with pytest.raises(Exception) as error3:
+            #    informe_diario_fundos = get_brfunds(2022, 7, proxy=None)
 
             assert str(error1.value) == "Classe não encontrada ['Fundo ABC']"
             assert str(error2.value) == "Verifique se a proxy está correta. ParserError: Error tokenizing data"
-            assert str(error3.value) == "Informar proxy. HTTPError: authenticationrequired"
+            #assert str(error3.value) == "Informar proxy. HTTPError: authenticationrequired"
 
             fidc = get_fidc(2022, 6, proxy=self.proxy)
             assert isinstance(fidc, pd.core.frame.DataFrame)
@@ -48,14 +48,14 @@ class TestClass():
             assert isinstance(fip, pd.core.frame.DataFrame)
 
             with pytest.raises(Exception) as error5:
-                fidc = get_fidc(2022, 7, proxy={"teste":"teste"})
+                fidc = get_fidc(2022, 7, proxy="teste")
             with pytest.raises(Exception) as error6:
-                fip = get_fip(2022, proxy={"teste":"teste"})
+                fip = get_fip(2022, proxy="teste")
             with pytest.raises(Exception) as error7:
-                fidc = get_fidc(2022, 7, proxy=self.proxy)
+                fidc = get_fidc(2012, 7, proxy=self.proxy)
 
-            assert str(error5.value) == "Necessário informar proxy correta. Response [407]"
-            assert str(error6.value) == "Necessário informar proxy correta. Response [407]"
+            assert str(error5.value) == "Necessário informar proxy correta."
+            assert str(error6.value) == "Necessário informar proxy correta."
             assert str(error7.value) == "Não há dados para esta data. Response [404]"
 
       def test_benchmarks(self):

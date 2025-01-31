@@ -44,7 +44,7 @@ def get_ibovespa(
         indice_ibov = yf.download("^BVSP", start=data_inicio, end=data_fim, proxy=proxy)
     else:
         indice_ibov = yf.download("^BVSP", start=data_inicio, end=data_fim)
-    indice_ibov = indice_ibov[["Adj Close"]]
+    indice_ibov = indice_ibov[["Close"]]
     retorno_ibov = indice_ibov.pct_change()
     indice_ibov_acumulado = (1 + retorno_ibov).cumprod()
     indice_ibov_acumulado.iloc[0] = 1

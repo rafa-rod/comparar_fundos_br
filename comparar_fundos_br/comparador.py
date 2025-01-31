@@ -63,11 +63,11 @@ def calcula_rentabilidade_fundos(
     dados_fundos_cvm: pd.DataFrame,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     fundo_acoes_filtrado_transformed = dados_fundos_cvm.copy()
-    #fundo_acoes_filtrado_transformed = copia.pivot_table(
-    #    index="DT_COMPTC", columns="CNPJ - Nome", values="VL_QUOTA"
-    #)
-    #fundo_acoes_filtrado_transformed.index = pd.to_datetime(fundo_acoes_filtrado_transformed.index)
-    #fundo_acoes_filtrado_transformed = fundo_acoes_filtrado_transformed.sort_index()
+    fundo_acoes_filtrado_transformed = fundo_acoes_filtrado_transformed.pivot_table(
+        index="DT_COMPTC", columns="CNPJ - Nome", values="VL_QUOTA"
+    )
+    fundo_acoes_filtrado_transformed.index = pd.to_datetime(fundo_acoes_filtrado_transformed.index)
+    fundo_acoes_filtrado_transformed = fundo_acoes_filtrado_transformed.sort_index()
 
     cotas_normalizadas = (fundo_acoes_filtrado_transformed/ _get_valores_iniciais(fundo_acoes_filtrado_transformed))
 

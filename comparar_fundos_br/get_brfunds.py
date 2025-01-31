@@ -138,13 +138,14 @@ def get_fidc(ano: int,
     start = time.time()
     url = "http://dados.cvm.gov.br/dados/FIDC/DOC/INF_MENSAL/DADOS/inf_mensal_fidc_{:02d}{:02d}.zip".format(ano, mes)
     if proxy:
-        dados_cvm = requests.get(url, proxies=proxy, verify=False)
+        try:
+            dados_cvm = requests.get(url, proxies=proxy, verify=False)
+        except AttributeError:
+            raise ValueError("Necessário informar proxy correta.")
     else:
         dados_cvm = requests.get(url)
     if str(dados_cvm) == '<Response [404]>':
         raise ValueError("Não há dados para esta data. Response [404]")
-    elif str(dados_cvm) == '<Response [407]>':
-        raise ValueError("Necessário informar proxy correta. Response [407]")
     arquivo = "inf_mensal_fidc_tab_X_2_{:02d}{:02d}.csv".format(ano, mes)
     zf = zipfile.ZipFile(io.BytesIO(dados_cvm.content))
     zf = zf.open(arquivo)
@@ -160,13 +161,14 @@ def get_fip(ano: int,
     start = time.time()
     url = "http://dados.cvm.gov.br/dados/FIP/DOC/INF_TRIMESTRAL/DADOS/inf_trimestral_fip_{:02d}.csv".format(ano)
     if proxy:
-        dados_cvm = requests.get(url, proxies=proxy, verify=False)
+        try:
+            dados_cvm = requests.get(url, proxies=proxy, verify=False)
+        except AttributeError:
+            raise ValueError("Necessário informar proxy correta.")
     else:
         dados_cvm = requests.get(url)
     if str(dados_cvm) == '<Response [404]>':
         raise ValueError("Não há dados para esta data. Response [404]")
-    elif str(dados_cvm) == '<Response [407]>':    
-        raise ValueError("Necessário informar proxy correta. Response [407]")
     lines = [i.strip().split(";") for i in dados_cvm.text.split("\n")]
     end = time.time()
     print(f"Finalizado em {round((end-start)/60,2)} minutos")
