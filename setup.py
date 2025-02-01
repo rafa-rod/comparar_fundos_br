@@ -20,15 +20,13 @@ package_data = \
 {'': ['*']}
 
 install_requires = \
-['DateTime>=4.5,<5.0',
- 'bar-chart-race>=0.1.0,<0.2.0',
- 'requests>=2.28.1,<3.0.0',
- 'seaborn>=0.11.2,<0.12.0',
- 'yfinance>=0.1.74,<0.2.0']
+[
+ 'requests>=2.31,<3.0.0',
+ 'seaborn>=0.11.2,<0.12.0']
 
 extras_require = \
-{':python_version <= "3.9"': ['matplotlib<=3.7.1', 'pandas<=1.5.3', 'numpy<1.26.0', 'pyettj<=0.3.2', 'scipy>=1,7,<1.9.1'],
- ':python_version >= "3.10"': ['matplotlib>=3.10.0', 'pandas>=2.2.3', 'numpy>=1.26.0', 'pyettj>=0.3.3', 'scipy>=1.13.1']}
+{':python_version <= "3.9"': ['matplotlib<=3.7.1', 'pandas<=1.5.3', 'numpy>=1.24.4', 'pyettj<=0.3.2', 'scipy>=1.5.1,<=1.10.1'],
+ ':python_version >= "3.10"': ['matplotlib>=3.10.0', 'pandas>=2.2.3', 'numpy>=1.26.0', 'pyettj>=0.3.3', 'scipy>=1.11.0']}
 
 setup_kwargs = {
     'name': 'comparar-fundos-br',
