@@ -58,7 +58,10 @@ def get_benchmark(
             benchmark: str = "cdi",
             proxy: Union[Dict[str, str], None] = None
             ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    if benchmark.upper()=="CDI": codigo_bcb = 12
+    if benchmark.upper()=="CDI":
+        dados_benchmark = get_selic(data_inicio, data_fim, proxy)
+        dados_benchmark = dados_benchmark.reset_index()
+        dados_benchmark.columns = ["data","CDI"]
     elif benchmark.upper()=="IMA-B": codigo_bcb = 12466
     elif benchmark.upper()=="IMA-B 5": codigo_bcb = 12467
     elif benchmark.upper()=="IMA-B 5+": codigo_bcb = 12468
@@ -66,20 +69,24 @@ def get_benchmark(
         indice_ibov, indice_ibov_acumulado = get_ibovespa(data_inicio, data_fim, proxy)
         return indice_ibov, indice_ibov_acumulado
     else: raise ValueError("Benchmark não encontrado.")
-    url = (
-        f"http://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo_bcb}/dados?formato=json"
-    )
-    if proxy:
-        dados_cvm = requests.get(url, proxies=proxy, verify=False).text
-    else:
-        dados_cvm = requests.get(url).text
-    dados_benchmark = pd.read_json(io.StringIO(dados_cvm))       
+    if benchmark.upper()!="CDI":
+        url = (
+            f"http://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo_bcb}/dados?formato=json"
+            )
+        if proxy:
+            dados_cvm = requests.get(url, proxies=proxy, verify=False).text
+        else:
+            dados_cvm = requests.get(url).text
+        try:
+            dados_benchmark = pd.read_json(io.StringIO(dados_cvm))
+        except ValueError:
+            raise ValueError('Dados não disponíveis')
     dados_benchmark["data"] = pd.to_datetime(dados_benchmark["data"], dayfirst=True)
     dados_benchmark = dados_benchmark.set_index("data")
     dados_benchmark = dados_benchmark[(dados_benchmark.index>=data_inicio) & (dados_benchmark.index<=data_fim)] / 100
-    dados_benchmark.columns = ["CDI"]
+    dados_benchmark.columns = [f"{benchmark.upper()}"]
     dados_benchmark_acumulado = (1 + dados_benchmark).cumprod()
-    dados_benchmark_acumulado.columns = ["CDI"]
+    dados_benchmark_acumulado.columns = [f"{benchmark.upper()}"]
     dados_benchmark_acumulado.iloc[0] = 1
     return dados_benchmark, dados_benchmark_acumulado
 
