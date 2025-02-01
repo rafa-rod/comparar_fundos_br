@@ -4,15 +4,16 @@ import sys
 
 import numpy as np
 import pandas as pd
-import pytest
+import pytest, sys
+
+sys.path.append("./src/comparar_fundos_br")
 
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 
-path = "../comparar_fundos_br/"
-sys.path.append(path)
-
-from comparar_fundos_br import *
+from benchmarks import *
+from comparador import *
+from get_brfunds import *
 
 class TestClass():
 

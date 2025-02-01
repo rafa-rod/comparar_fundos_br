@@ -1,8 +1,10 @@
 [tool.poetry]
 name = "comparar_fundos_br"
-version = "0.1.1"
-description = ""
+version = "0.1.2"
+description = "Obter dados de fundos de investimento"
 authors = ["Rafael Rodrigues <rafael.rafarod@gmail.com>"]
+readme = "README.md"
+homepage = "https://github.com/rafa-rod/comparar_fundos_br.git"
 
 [tool.poetry.dependencies]
 python = "^3.8.5"

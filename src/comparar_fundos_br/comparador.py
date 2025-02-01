@@ -2,7 +2,7 @@
 """
 @author: Rafael
 """
-from comparar_fundos_br.benchmarks import *
+from benchmarks import *
 import warnings
 from typing import Any, List, Tuple, Union, Dict
 

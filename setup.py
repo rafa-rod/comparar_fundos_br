@@ -1,23 +1,27 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup
-import subprocess
-from os import path
+import os, sys
 
-this_directory = path.abspath(path.dirname(__file__))
+PACKAGE = "comparar_fundos_br"
 
-with open(path.join(this_directory, 'README_pypi.md'), encoding='utf-8') as f:
+with open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
-with open(path.join(this_directory, 'comparar_fundos_br', 'version.py'), 'r') as f:
-    for line in f:
-        if line.startswith('__version__'):
-            version = line.split('"')[1]
+sys.path.append(os.path.join('src', PACKAGE))
+
+import version
+
+version_ = version.__version__
+
+package_dir = \
+{'': 'src'}
 
 packages = \
-['comparar_fundos_br']
+[PACKAGE]
 
 package_data = \
-{'': ['*']}
+{'': ['*'],
+ PACKAGE: ['media/*']}
 
 install_requires = \
 [
@@ -30,20 +34,21 @@ extras_require = \
 
 setup_kwargs = {
     'name': 'comparar-fundos-br',
-    'version': version,
+    'version': version_,
     'description': 'Download dados de fundos de investimento e realiza comparações.',
+    'long_description_content_type': 'text/markdown',
     'long_description': long_description,
-    'long_description_content_type': "text/markdown",
     'author': 'Rafael Rodrigues',
     'author_email': 'rafael.rafarod@gmail.com',
     'maintainer': None,
     'maintainer_email': None,
-    'url': "",
+    'url': f"https://github.com/rafa-rod/{PACKAGE}",
+    'package_dir': package_dir,
     'packages': packages,
     'package_data': package_data,
     'install_requires': install_requires,
+    'extras_require': extras_require,
     'python_requires': '>=3.8.5,<4.0',
 }
-
 
 setup(**setup_kwargs)
