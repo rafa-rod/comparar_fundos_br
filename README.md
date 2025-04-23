@@ -51,9 +51,8 @@ Veja a seguir um exemplo para capturar dados dos Fundos de Investimento com seus
 ```python
 import comparar_fundos_br as comp
 
-informe_diario_fundos_historico = comp.get_brfunds(anos=range(2021,2022), #somente 2021
+informe_diario_fundos_historico = comp.fundosbr(anos=range(2021,2022), #somente 2021
                                               meses=range(1,3), #somente Jan e Fev
-                                              classe="Ações", 
                                               num_minimo_cotistas=10, 
                                               patriminio_liquido_minimo=1e6, 
                                               proxy=proxies)
@@ -76,8 +75,8 @@ Se desejar capturar todas as classes de fundos, basta não restringir a variáve
 também não há restrições sobre fundos com número de cotistas, tampouco sobre o patrimônio líquido. Nesse exemplo, não está sendo utilizada a configuração da proxy.
 
 ```python
-informe_diario_fundos_historico = comp.get_brfunds(anos=range(2021,2022), #somente 2021
-                                              meses=range(1,3), #somente Jan e Fev)
+informe_diario_fundos_historico = comp.fundosbr(anos=range(2021,2022), #somente 2021
+                                                meses=range(1,3), #somente Jan e Fev)
 ```
 O exemplo acima demora mais para ser executado, uma vez que obtém todos os Fundos dentro do período selecionado. 
 Caso deseje, por exemplo, apenas algunas classes de Fundos, como: Fundos de Ações e de Renda Fixa, siga o exemplo abaixo.
@@ -85,7 +84,7 @@ Caso deseje, por exemplo, apenas algunas classes de Fundos, como: Fundos de Aç�
 Também é possível consultar os tipos de classe disponíveis.
 
 ```python
-informe_diario_fundos_historico = comp.get_brfunds(anos=range(2021,2022), #somente 2021
+informe_diario_fundos_historico = comp.fundosbr(anos=range(2021,2022), #somente 2021
                                               meses=range(1,3), #somente Jan e Fev,
                                               classe=["Renda Fixa", "Ações"])
 
@@ -93,7 +92,7 @@ informe_diario_fundos_historico = comp.get_brfunds(anos=range(2021,2022), #somen
 comp.get_classes()
 ```
 
-Para obter o retorno dos Fundos, chame a função `calcula_rentabilidade_fundos` passando os dados dos fundos que acabou de obter.
+Para obter o retorno dos Fundos, chame a função `calcula_risco_retorno_fundos` passando os dados dos fundos que acabou de obter.
 
 ```python
 (  risco_retorno,
@@ -101,7 +100,7 @@ Para obter o retorno dos Fundos, chame a função `calcula_rentabilidade_fundos`
     rentabilidade_media_anualizada,
     rentabilidade_acumulada_por_ano,
     rentabilidade_fundos_total,
-) = comp.calcula_rentabilidade_fundos(informe_diario_fundos_historico)
+) = comp.calcula_risco_retorno_fundos(informe_diario_fundos_historico)
 ```
 
 O primeiro dataframe indica tanto o risco (volatidade padrão) de cada fundo, por CNPJ, quanto sua rentabilidade, ambos anualizados. Já o segundo dataframe retorna o valor das cotas dos fundos normalizadas no período selecionado, o que facilita para comparação (veja a seguir nos gráficos).
@@ -215,14 +214,6 @@ melhores.head()
 | 127.658068 | 03.922.006/0001-04 |  BRADESCO H FUNDO DE INVESTIMENTO AÇÕES PETROBRAS    |
 | 127.449134 | 17.489.100/0001-26 |  BRADESCO FUNDO DE INVESTIMENTO EM AÇÕES BB SEG...   |
 | 127.296598 | 11.504.894/0001-73 |  BRADESCO FUNDO DE INVESTIMENTO EM AÇÕES - PETR...   |
-```
-
-Também há a possibilidade de listar os piores e melhores Fundos em termos de risco e retorno:
-
-```python
-melhores_fundos, piores_fundos = comp.melhores_e_piores_fundos(rentabilidade_fundos_total, num=10)
-
-fundos_maior_risco, fundos_menor_risco = comp.melhores_e_piores_fundos(risco_retorno[["volatilidade"]], num=10)
 ```
 
 Para Fundos de Participação (FIPs) e Fundos de Direitos Creditórios (FIDCs), a sistemática é diferente. Enquanto os FIPs tem seus resultados divulgados trimestralmente, os FIDCs são mensalmente divulgados. Assim, para obte-los, basta codar:

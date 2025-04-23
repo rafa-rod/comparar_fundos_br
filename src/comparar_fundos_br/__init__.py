@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .get_brfunds import *
+from .fundosbr import *
 from .benchmarks import *
 from .comparador import *
 from . import version

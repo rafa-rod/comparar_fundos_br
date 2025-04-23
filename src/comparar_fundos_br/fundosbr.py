@@ -1,0 +1,183 @@
+# -*- coding: utf-8 -*-
+"""
+@author: Rafael
+"""
+import getpass
+import io
+import os
+import time
+import warnings
+import zipfile
+from datetime import datetime
+from typing import List, Union, Dict, Optional
+import polars as pl
+import pandas as pd
+import requests
+
+warnings.filterwarnings("ignore")
+
+pd.set_option("display.float_format", lambda x: "%.6f" % x)
+pd.set_option("display.max_rows", 100)
+pd.set_option("display.max_columns", 10)
+pd.set_option("display.width", 1000)
+
+def get_classes() -> List[str]:
+    return ['Renda Fixa', 'Ações', 'Multimercado', 'Cambial']
+
+def pontua_cnpj(cnpj: str) -> str:
+    if len(cnpj) < 14:
+        cnpj = cnpj.zfill(14)
+    cnpj = cnpj.replace("-","").replace(".","").replace("/","")
+    p1, p2, p3, p4, p5 = cnpj[:2], cnpj[2:5], cnpj[5:8], cnpj[8:12], cnpj[12:]
+    return f"{p1}.{p2}.{p3}/{p4}-{p5}"
+
+def _get_response(url: str, proxy: Optional[Dict[str, str]] = None):
+    if proxy:
+        resposta = requests.get(url, proxies=proxy, verify=False)
+    else:
+        resposta = requests.get(url)
+    return resposta
+
+def _ler_zip_files(resposta, arquivo: str) -> pl.dataframe.frame.DataFrame:
+    if str(resposta) != "<Response [200]>" and str(resposta) != '<Response [407]>':
+        raise ValueError("Não foi possível baixar os dados solicitados")
+    elif str(resposta) == '<Response [407]>':
+        raise ValueError("Necessário informar proxy correta. Response [407]")
+    zf = zipfile.ZipFile(io.BytesIO(resposta.content))
+    zf = zf.open(arquivo)
+    lines = zf.readlines()
+    lines = [i.strip().decode("ISO-8859-1").split(";") for i in lines]
+    fundos = pl.DataFrame(lines[1:], schema=lines[0])
+    return fundos
+
+def get_cadastro_fundos(
+    classe: Optional[Union[List[str], str]] = None, 
+    proxy: Optional[Dict[str, str]] = None,
+    output_format: str = 'pandas') -> Union[pd.DataFrame, pl.dataframe.frame.DataFrame]:
+    classes_disponiveis = get_classes()
+    start = time.time()
+    url = "http://dados.cvm.gov.br/dados/FI/CAD/DADOS/registro_fundo_classe.zip"
+    arquivo = "registro_classe.csv"
+    resposta = _get_response(url, proxy=proxy)
+    fundos = _ler_zip_files(resposta, arquivo)
+    fundos_filtrado = fundos.filter( (pl.col('Situacao')=="Em Funcionamento Normal") &
+                                     (pl.col('Tipo_Classe')=='Classes de Cotas de Fundos FIF') &
+                                     (pl.col('Classificacao').is_not_null()) )
+    if classe:
+        if not isinstance(classe, list):
+            classe = [classe]
+        check_classes = [x for x in classe if x not in classes_disponiveis]
+        if check_classes:
+            raise ValueError(f"Classe não encontrada {check_classes}")
+        fundos_filtrado = fundos_filtrado.filter(pl.col('Classificacao').is_in(classe))
+    for col in ['Data_Inicio', 'Data_Constituicao', 'Data_Registro']:
+        fundos_filtrado = fundos_filtrado.with_columns(pl.col(col).str.to_datetime("%Y-%m-%d"))
+    for col in ['ID_Registro_Fundo', 'ID_Registro_Classe', 'Codigo_CVM']:
+        fundos_filtrado = fundos_filtrado.with_columns(pl.col(col).cast(pl.Int64, strict=False))
+    fundos_filtrado = fundos_filtrado.with_columns(pl.col(["CNPJ_Classe"]).map_elements(pontua_cnpj))
+    if output_format.lower() == 'pandas':
+        fundos_filtrado = fundos_filtrado.to_pandas()
+    print(f"Cadastro finalizado em {round((time.time()-start)/60,2)} minutos")
+    return fundos_filtrado
+
+def _ler_dados_diarios(ano: int, mes: int, proxy: Optional[Dict[str, str]] = None,
+                       cnpj: Optional[str] = None,
+                       num_minimo_cotistas: Optional[int] = None, 
+                       patriminio_liquido_minimo: Optional[int] = None) -> pl.dataframe.frame.DataFrame:
+    arquivo = "inf_diario_fi_{:02d}{:02d}.csv".format(ano, mes) if ano> 2004 else "inf_diario_fi_{:02d}.csv".format(ano)
+    url = "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{:02d}{:02d}.zip".format(ano, mes) if ano>= 2021 else \
+           "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/HIST/inf_diario_fi_{:02d}.zip".format(ano)
+    resposta = _get_response(url, proxy=proxy)
+    fundos = _ler_zip_files(resposta, arquivo)
+    cols1 = [x for x in fundos.columns if "TP_FUNDO" in x]
+    if cols1 and int(ano)>=2004:
+        fundos = fundos.rename({cols1[0]: 'TP_FUNDO'})
+        fundos = fundos.filter(pl.col("TP_FUNDO").is_in(['FI','FIF']))
+    cols2 = [x for x in fundos.columns if "CNPJ_FUNDO" in x][0]
+    fundos = fundos.rename({cols2: 'CNPJ_FUNDO'})
+    fundos = fundos.with_columns(pl.col("NR_COTST").cast(pl.Int32, strict=False))
+    fundos = fundos.with_columns(pl.col("VL_PATRIM_LIQ").cast(pl.Float64, strict=False))
+    fundos = fundos.with_columns(pl.col("VL_TOTAL").cast(pl.Float64, strict=False))
+    fundos = fundos.with_columns(pl.col("CAPTC_DIA").cast(pl.Float64, strict=False))
+    fundos = fundos.with_columns(pl.col("RESG_DIA").cast(pl.Float64, strict=False))
+    fundos = fundos.with_columns(pl.col("VL_QUOTA").cast(pl.Float32, strict=False))
+    fundos = fundos.with_columns(pl.col("DT_COMPTC").str.to_datetime("%Y-%m-%d"))
+    if num_minimo_cotistas:
+        fundos = fundos.filter(pl.col("NR_COTST") >= num_minimo_cotistas)
+    if patriminio_liquido_minimo:
+        fundos = fundos.filter(pl.col("VL_PATRIM_LIQ") >= patriminio_liquido_minimo)
+    if cnpj:
+        if isinstance(cnpj, str): cnpj = [cnpj]
+        lista_cnpj = [pontua_cnpj(x) for x in cnpj]
+        fundos = fundos.filter(pl.col("CNPJ_FUNDO").is_in(lista_cnpj))
+    return fundos.sort('DT_COMPTC')
+
+def get_fidc(ano: int, 
+             mes: int, proxy: 
+             Union[Dict[str, str], None] = None) -> pd.DataFrame:
+    start = time.time()
+    url = "http://dados.cvm.gov.br/dados/FIDC/DOC/INF_MENSAL/DADOS/inf_mensal_fidc_{:02d}{:02d}.zip".format(ano, mes)
+    if proxy:
+        try:
+            dados_cvm = requests.get(url, proxies=proxy, verify=False)
+        except AttributeError:
+            raise ValueError("Necessário informar proxy correta.")
+    else:
+        dados_cvm = requests.get(url)
+    if str(dados_cvm) == '<Response [404]>':
+        raise ValueError("Não há dados para esta data. Response [404]")
+    arquivo = "inf_mensal_fidc_tab_X_2_{:02d}{:02d}.csv".format(ano, mes)
+    zf = zipfile.ZipFile(io.BytesIO(dados_cvm.content))
+    zf = zf.open(arquivo)
+    lines = zf.readlines()
+    lines = [i.strip().decode("ISO-8859-1").split(";") for i in lines]
+    end = time.time()
+    print(f"Finalizado em {round((end-start)/60,2)} minutos")
+    return pd.DataFrame(lines[1:], columns=lines[0])
+
+def fundosbr(
+            anos: Union[List[int], int],
+            meses: Union[List[int], int],
+            cnpj: Optional[str] = None,
+            num_minimo_cotistas: Optional[int] = None,
+            patriminio_liquido_minimo: Optional[int] = None,
+            proxy: Optional[Dict[str, str]] = None,
+            output_format: str = 'pandas'
+				) -> Union[pd.DataFrame, pl.dataframe.frame.DataFrame]:
+    start = time.time()
+    if isinstance(anos, int): anos = [anos]
+    else: anos = list(anos)
+    if isinstance(meses, int): meses = [meses]
+    else: anos = list(anos)
+    informe_diario_fundos_historico = pl.DataFrame()
+    for ano in anos:
+        for mes in meses:
+            if ano == datetime.now().year and mes <= datetime.now().month:
+                informe_diario_fundos_filtrado = _ler_dados_diarios(ano, mes, proxy, cnpj, num_minimo_cotistas, patriminio_liquido_minimo)
+                informe_diario_fundos_historico = pl.concat([informe_diario_fundos_historico, informe_diario_fundos_filtrado])
+            elif ano < datetime.now().year:
+                informe_diario_fundos_filtrado = _ler_dados_diarios(ano, mes, proxy, cnpj, num_minimo_cotistas, patriminio_liquido_minimo)
+                informe_diario_fundos_historico = pl.concat([informe_diario_fundos_historico, informe_diario_fundos_filtrado])
+    print(f"Dados diários finalizados em {round((time.time()-start)/60,2)} minutos")
+    if output_format.lower() == 'pandas':
+        return informe_diario_fundos_historico.to_pandas().set_index('DT_COMPTC').sort_index()
+    else:
+        return informe_diario_fundos_historico.sort('DT_COMPTC')
+
+def get_fip(ano: int, 
+            proxy: Union[Dict[str, str], None] = None) -> pd.DataFrame:
+    start = time.time()
+    url = "http://dados.cvm.gov.br/dados/FIP/DOC/INF_TRIMESTRAL/DADOS/inf_trimestral_fip_{:02d}.csv".format(ano)
+    if proxy:
+        try:
+            dados_cvm = requests.get(url, proxies=proxy, verify=False)
+        except AttributeError:
+            raise ValueError("Necessário informar proxy correta.")
+    else:
+        dados_cvm = requests.get(url)
+    if str(dados_cvm) == '<Response [404]>':
+        raise ValueError("Não há dados para esta data. Response [404]")
+    lines = [i.strip().split(";") for i in dados_cvm.text.split("\n")]
+    end = time.time()
+    print(f"Finalizado em {round((end-start)/60,2)} minutos")
+    return pd.DataFrame(lines[1:], columns=lines[0])

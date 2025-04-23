@@ -13,7 +13,7 @@ import seaborn as sns; sns.set()
 
 from benchmarks import *
 from comparador import *
-from get_brfunds import *
+from fundosbr import *
 
 class TestClass():
 
@@ -24,22 +24,16 @@ class TestClass():
             self.comparador()
 
       def test_getfunds(self):
-            self.informe_diario_fundos = get_brfunds(anos=range(2021,2022), #somente 2021
+            self.informe_diario_fundos = fundosbr(anos=range(2021,2022), #somente 2021
                                                      meses = range(1,3),  #somente Jan e Fev
-                                                     classe="Ações", 
                                                      num_minimo_cotistas=10, 
                                                      patriminio_liquido_minimo=1_000_000, 
                                                      proxy=self.proxy
                                                      )
             assert isinstance(self.informe_diario_fundos, pd.core.frame.DataFrame)
-            with pytest.raises(Exception) as error1:
-                informe_diario_fundos = get_brfunds(2022, 7, classe=["Fundo ABC"], proxy=self.proxy)
             with pytest.raises(Exception) as error2:
-                informe_diario_fundos = get_brfunds(2022, 7, proxy='teste')
-            #with pytest.raises(Exception) as error3:
-            #    informe_diario_fundos = get_brfunds(2022, 7, proxy=None)
+                informe_diario_fundos = fundosbr(2022, 7, proxy='teste')
 
-            assert str(error1.value) == "Classe não encontrada ['Fundo ABC']"
             assert str(error2.value) == "Verifique se a proxy está correta. ParserError: Error tokenizing data"
             #assert str(error3.value) == "Informar proxy. HTTPError: authenticationrequired"
 
@@ -60,10 +54,9 @@ class TestClass():
             assert str(error7.value) == "Não há dados para esta data. Response [404]"
 
       def test_benchmarks(self):
-            cdi, cdi_acumulado = get_benchmark("2022-01-01", "2022-07-01", proxy=self.proxy)
+            cdi = get_benchmark("2022-01-01", "2022-07-01", proxy=self.proxy)
             assert isinstance(cdi, pd.core.frame.DataFrame)
-            assert isinstance(cdi_acumulado, pd.core.frame.DataFrame)
-            ibov, indice_ibov_acumulado = get_benchmark("2022-01-01", "2022-07-01", benchmark="ibov", proxy=self.proxy)
+            ibov = get_benchmark("2022-01-01", "2022-07-01", benchmark="ibov", proxy=self.proxy)
             assert isinstance(ibov, pd.core.frame.DataFrame)
             stocks = get_stocks(["PETR4, VALE3"],"2022-01-01", "2022-07-01", proxy=self.proxy)
             assert isinstance(stocks, pd.core.frame.DataFrame)

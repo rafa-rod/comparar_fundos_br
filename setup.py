@@ -29,7 +29,7 @@ install_requires = \
  'seaborn>=0.11.2,<0.12.0']
 
 extras_require = \
-{':python_version <= "3.9"': ['matplotlib<=3.7.1', 'pandas<=1.5.3', 'numpy>=1.24.4', 'pyettj<=0.3.2', 'scipy>=1.5.1,<=1.10.1'],
+{
  ':python_version >= "3.10"': ['matplotlib>=3.10.0', 'pandas>=2.2.3', 'numpy>=1.26.0', 'pyettj>=0.3.3', 'scipy>=1.11.0']}
 
 setup_kwargs = {
@@ -48,7 +48,7 @@ setup_kwargs = {
     'package_data': package_data,
     'install_requires': install_requires,
     'extras_require': extras_require,
-    'python_requires': '>=3.8.5,<4.0',
+    'python_requires': '>=3.10,<4.0',
 }
 
 setup(**setup_kwargs)

@@ -1,34 +1,31 @@
 [tool.poetry]
 name = "comparar_fundos_br"
-version = "0.1.2"
+version = "0.2.0"
 description = "Obter dados de fundos de investimento"
 authors = ["Rafael Rodrigues <rafael.rafarod@gmail.com>"]
 readme = "README.md"
 homepage = "https://github.com/rafa-rod/comparar_fundos_br.git"
 
 [tool.poetry.dependencies]
-python = "^3.8.5"
+python = "^3.10"
 pandas = [
-    {version = ">=1.3.0, <=1.5.3", python = "<=3.9"},
     {version = ">=2.1.0", python = ">=3.10"}
 ]
 requests = "^2.31"
 numpy = [
-    {version = ">=1.24.4, <1.26.0", python = "<=3.9"},
     {version = ">=1.26.0", python = ">=3.10"}
 ]
 scipy = [
-    {version = ">=1.5.1,<=1.10.1", python = "<=3.9"},
     {version = ">=1.11.0", python = ">=3.10"}
 ]
 matplotlib = [
-    {version = "<=3.7.1", python = "<=3.9"},
     {version = ">=3.10.0", python = ">=3.10"}
 ]
 pyettj = [
-    {version = "<=0.3.2", python = "<=3.9"},
     {version = ">=0.3.3", python = ">=3.10"}
 ]
+polars = "^1.27.1"
+fastexcel = "^0.13.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
