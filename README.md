@@ -61,13 +61,14 @@ informe_diario_fundos_historico.head()
 ```
 
 ```
-| CNPJ_FUNDO         |   NR_COTST | VL_PATRIM_LIQ   | VL_QUOTA   | VL_TOTAL       | CAPTC_DIA   | RESG_DIA     |
-|--------------------|------------|-----------------|------------|----------------|-------------|--------------|
-| 05.108.305/0001-35 |         40 | 33.728.834,88   | 16,84      | 33.788.580,70  | 0,00        | 0,00         |
-| 11.003.123/0001-00 |         53 | 103.376.335,90  | 4,49       | 103.387.546,16 | 0,00        | 0,00         |
-| 03.565.811/0001-28 |        361 | 359.491.503,21  | 14.865,45  | 362.322.961,65 | 0,00        | 2.703.491,65 |
-| 25.108.749/0001-88 |         16 | 18.910.705,85   | 1,60       | 17.767.469,72  | 0,00        | 0,00         |
-| 01.045.437/0001-04 |        101 | 4.957.882,64    | 16,58      | 4.958.578,47   | 0,00        | 0,00         |
+| DT_COMPTC           | CNPJ_FUNDO         |   NR_COTST | VL_PATRIM_LIQ    | VL_QUOTA   | VL_TOTAL         | CAPTC_DIA   | RESG_DIA     |
+|---------------------|--------------------|------------|------------------|------------|------------------|-------------|--------------|
+| 2021-01-04 00:00:00 | 14.298.639/0001-00 |         24 | 20.453.521,63    | 0,81       | 20.420.656,04    | 0,00        | 0,00         |
+| 2021-01-04 00:00:00 | 31.713.528/0001-31 |         83 | 31.041.132,44    | 1,24       | 31.045.695,45    | 0,00        | 0,00         |
+| 2021-01-04 00:00:00 | 31.533.145/0001-81 |       3367 | 1.028.192.777,11 | 1,79       | 1.029.976.324,40 | 790.500,00  | 6.955.880,12 |
+| 2021-01-04 00:00:00 | 09.181.287/0001-78 |        502 | 666.290.024,51   | 3,05       | 666.325.870,37   | 24.000,00   | 330.412,68   |
+| 2021-01-04 00:00:00 | 29.106.540/0001-36 |         26 | 237.930.377,62   | 126,01     | 237.937.564,12   | 0,00        | 0,00         |
+
 ```
 
 Importante ressaltar que todos os Fundos que são retornados possuem SIT ou situação CVM como "EM FUNCIONAMENTO NORMAL".
@@ -75,16 +76,24 @@ Os dados históricos dos fundos contém alguns problemas como: repetição do me
 alterações em nome das colunas ou, até mesmo, ausência de alguma coluna. Para contornar, filtramos os tipos de fundos como:
 `'FI', 'FIF' ou'CLASSES - FIF` e não retornamos com essa coluna, mas a informação pode ser obtida a posteriori, veja a seguir.
 
-Todas as informações adicionais sobre os fundos como: classificação ANBIMA, classe, Denominação Social (Nome do Fundo), Condomínio, Custodiante, etc estão disponíveis no cadastro dos fundos. Para obte-lo, basta invocar a função abaixo:
+Todas as informações adicionais sobre os fundos como: classificação ANBIMA, classe, Denominação Social (Nome do Fundo), Condomínio, Custodiante e outras estão disponíveis no cadastro dos fundos. Para obte-lo, basta invocar a função abaixo:
 
 ```python
-cadastro = comp.get_cadastro_fundos(classe=comp.get_classes(), proxy=proxies, output_format='polars')
+cadastro = comp.get_cadastro_fundos(classe=comp.get_classes(), proxy=proxies,
+                                    output_format='polars')
 ```
 Caso deseje filtrar apenas algunas classes de Fundos, siga o exemplo abaixo que filtra por fundos de ações.
 
 ```python
 print(comp.get_classes())
-cadastro = comp.get_cadastro_fundos(classe=["Ações"], proxy=proxies, output_format='polars')
+cadastro = comp.get_cadastro_fundos(classe=["Ações"], proxy=proxies,
+                                    output_format='polars')
+```
+
+Para cruzar as informações, execute:
+
+```python
+informe_completo = comp.mesclar_bases(cadastro, informe_diario_fundos_historico)
 ```
 
 Para obter o retorno dos Fundos, chame a função `calcula_risco_retorno_fundos` passando os dados dos fundos que acabou de obter.

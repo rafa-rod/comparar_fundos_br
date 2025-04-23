@@ -80,12 +80,20 @@ def get_cadastro_fundos(
     print(f"Cadastro finalizado em {round((time.time()-start)/60,2)} minutos")
     return fundos_filtrado
 
-def mesclar_bases(cadastro_fundos: pl.dataframe.frame.DataFrame, informe_diario_fundos: pl.dataframe.frame.DataFrame) -> pl.dataframe.frame.DataFrame:
+def mesclar_bases(cadastro_fundos: pl.dataframe.frame.DataFrame, informe_diario_fundos: pl.dataframe.frame.DataFrame,
+                  output_format: str = 'pandas') -> pl.dataframe.frame.DataFrame:
     '''Função para obter dados adicionais dos Fundos que estão em seu cadastro.
     Basta informar o dataframe do cadastro com o dataframe do informe diario para obter as informações.'''
+    if isinstance(cadastro_fundos, pd.DataFrame):
+        cadastro_fundos = pl.from_pandas(cadastro_fundos)
+    if isinstance(informe_diario_fundos, pd.DataFrame):
+        informe_diario_fundos = pl.from_pandas(informe_diario_fundos)
     dados_completos_filtrados = informe_diario_fundos.join(cadastro_fundos, right_on=["CNPJ_Classe"], left_on=['CNPJ_FUNDO'], how="inner")
     dados_completos_filtrados = dados_completos_filtrados.with_columns(((pl.col('CNPJ_FUNDO')) + ' // ' + (pl.col('Denominacao_Social'))).alias('CNPJ - Nome'))
-    return dados_completos_filtrados
+    if output_format.lower() == 'pandas':
+        return dados_completos_filtrados.to_pandas().set_index('DT_COMPTC').sort_index()
+    else:
+        return dados_completos_filtrados.sort('DT_COMPTC')
 
 def _ler_dados_diarios(ano: int, mes: int, proxy: Optional[Dict[str, str]] = None,
                        cnpj: Optional[str] = None,
