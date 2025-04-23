@@ -92,7 +92,7 @@ def _ler_dados_diarios(ano: int, mes: int, proxy: Optional[Dict[str, str]] = Non
     cols1 = [x for x in fundos.columns if "TP_FUNDO" in x]
     if cols1 and int(ano)>=2004:
         fundos = fundos.rename({cols1[0]: 'TP_FUNDO'})
-        fundos = fundos.filter(pl.col("TP_FUNDO").is_in(['FI','FIF']))
+        fundos = fundos.filter(pl.col("TP_FUNDO").is_in(['FI','FIF','CLASSES - FIF']))
     cols2 = [x for x in fundos.columns if "CNPJ_FUNDO" in x][0]
     fundos = fundos.rename({cols2: 'CNPJ_FUNDO'})
     fundos = fundos.with_columns(pl.col("NR_COTST").cast(pl.Int32, strict=False))
@@ -110,7 +110,8 @@ def _ler_dados_diarios(ano: int, mes: int, proxy: Optional[Dict[str, str]] = Non
         if isinstance(cnpj, str): cnpj = [cnpj]
         lista_cnpj = [pontua_cnpj(x) for x in cnpj]
         fundos = fundos.filter(pl.col("CNPJ_FUNDO").is_in(lista_cnpj))
-    return fundos.sort('DT_COMPTC')
+    return fundos.select(['DT_COMPTC', 'CNPJ_FUNDO', 'NR_COTST', 'VL_PATRIM_LIQ', 'VL_QUOTA',
+                          'VL_TOTAL', 'CAPTC_DIA', 'RESG_DIA']).unique().sort('DT_COMPTC')
 
 def get_fidc(ano: int, 
              mes: int, proxy: 
