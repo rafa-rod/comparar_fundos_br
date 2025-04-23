@@ -80,6 +80,13 @@ def get_cadastro_fundos(
     print(f"Cadastro finalizado em {round((time.time()-start)/60,2)} minutos")
     return fundos_filtrado
 
+def mesclar_bases(cadastro_fundos: pl.dataframe.frame.DataFrame, informe_diario_fundos: pl.dataframe.frame.DataFrame) -> pl.dataframe.frame.DataFrame:
+    '''Função para obter dados adicionais dos Fundos que estão em seu cadastro.
+    Basta informar o dataframe do cadastro com o dataframe do informe diario para obter as informações.'''
+    dados_completos_filtrados = informe_diario_fundos.join(cadastro_fundos, right_on=["CNPJ_Classe"], left_on=['CNPJ_FUNDO'], how="inner")
+    dados_completos_filtrados = dados_completos_filtrados.with_columns(((pl.col('CNPJ_FUNDO')) + ' // ' + (pl.col('Denominacao_Social'))).alias('CNPJ - Nome'))
+    return dados_completos_filtrados
+
 def _ler_dados_diarios(ano: int, mes: int, proxy: Optional[Dict[str, str]] = None,
                        cnpj: Optional[str] = None,
                        num_minimo_cotistas: Optional[int] = None, 
@@ -112,29 +119,6 @@ def _ler_dados_diarios(ano: int, mes: int, proxy: Optional[Dict[str, str]] = Non
         fundos = fundos.filter(pl.col("CNPJ_FUNDO").is_in(lista_cnpj))
     return fundos.select(['DT_COMPTC', 'CNPJ_FUNDO', 'NR_COTST', 'VL_PATRIM_LIQ', 'VL_QUOTA',
                           'VL_TOTAL', 'CAPTC_DIA', 'RESG_DIA']).unique().sort('DT_COMPTC')
-
-def get_fidc(ano: int, 
-             mes: int, proxy: 
-             Union[Dict[str, str], None] = None) -> pd.DataFrame:
-    start = time.time()
-    url = "http://dados.cvm.gov.br/dados/FIDC/DOC/INF_MENSAL/DADOS/inf_mensal_fidc_{:02d}{:02d}.zip".format(ano, mes)
-    if proxy:
-        try:
-            dados_cvm = requests.get(url, proxies=proxy, verify=False)
-        except AttributeError:
-            raise ValueError("Necessário informar proxy correta.")
-    else:
-        dados_cvm = requests.get(url)
-    if str(dados_cvm) == '<Response [404]>':
-        raise ValueError("Não há dados para esta data. Response [404]")
-    arquivo = "inf_mensal_fidc_tab_X_2_{:02d}{:02d}.csv".format(ano, mes)
-    zf = zipfile.ZipFile(io.BytesIO(dados_cvm.content))
-    zf = zf.open(arquivo)
-    lines = zf.readlines()
-    lines = [i.strip().decode("ISO-8859-1").split(";") for i in lines]
-    end = time.time()
-    print(f"Finalizado em {round((end-start)/60,2)} minutos")
-    return pd.DataFrame(lines[1:], columns=lines[0])
 
 def fundosbr(
             anos: Union[List[int], int],
@@ -179,6 +163,29 @@ def get_fip(ano: int,
     if str(dados_cvm) == '<Response [404]>':
         raise ValueError("Não há dados para esta data. Response [404]")
     lines = [i.strip().split(";") for i in dados_cvm.text.split("\n")]
+    end = time.time()
+    print(f"Finalizado em {round((end-start)/60,2)} minutos")
+    return pd.DataFrame(lines[1:], columns=lines[0])
+
+def get_fidc(ano: int, 
+             mes: int, proxy: 
+             Union[Dict[str, str], None] = None) -> pd.DataFrame:
+    start = time.time()
+    url = "http://dados.cvm.gov.br/dados/FIDC/DOC/INF_MENSAL/DADOS/inf_mensal_fidc_{:02d}{:02d}.zip".format(ano, mes)
+    if proxy:
+        try:
+            dados_cvm = requests.get(url, proxies=proxy, verify=False)
+        except AttributeError:
+            raise ValueError("Necessário informar proxy correta.")
+    else:
+        dados_cvm = requests.get(url)
+    if str(dados_cvm) == '<Response [404]>':
+        raise ValueError("Não há dados para esta data. Response [404]")
+    arquivo = "inf_mensal_fidc_tab_X_2_{:02d}{:02d}.csv".format(ano, mes)
+    zf = zipfile.ZipFile(io.BytesIO(dados_cvm.content))
+    zf = zf.open(arquivo)
+    lines = zf.readlines()
+    lines = [i.strip().decode("ISO-8859-1").split(";") for i in lines]
     end = time.time()
     print(f"Finalizado em {round((end-start)/60,2)} minutos")
     return pd.DataFrame(lines[1:], columns=lines[0])

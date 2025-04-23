@@ -46,50 +46,45 @@ proxies = {
         }
 ```
 
-Veja a seguir um exemplo para capturar dados dos Fundos de Investimento com seus respectivos filtros.
+Veja a seguir um exemplo para capturar dados dos Fundos de Investimento com seus respectivos filtros. Repare que é possível obter um formato de dataframe em `pandas` ou `polars` (auxilia para trabalhar com grandes dataframes).
 
 ```python
 import comparar_fundos_br as comp
 
 informe_diario_fundos_historico = comp.fundosbr(anos=range(2021,2022), #somente 2021
-                                              meses=range(1,3), #somente Jan e Fev
-                                              num_minimo_cotistas=10, 
-                                              patriminio_liquido_minimo=1e6, 
-                                              proxy=proxies)
+                                                  meses=range(1,3), #somente Jan e Fev
+                                                  num_minimo_cotistas=10, 
+                                                  patriminio_liquido_minimo=1e6, 
+                                                  proxy=proxies,
+                                                  output_format='pandas')
 informe_diario_fundos_historico.head()
 ```
 
 ```
-| DT_COMPTC  | CNPJ - Nome                                       |   CLASSE        |   VL_QUOTA  |  NR_COTST |   VL_PATRIM_LIQ |
-|:-----------|:-------------------------------------------------:|----------------:|------------:|----------:|----------------:|
-| 2022-01-03 | 28.144.770/0001-27 // SAFRA FARADAY AÇÕES FUND... |  Ações          |  147.689974 |      7144 |   1085967556.96 | 
-| 2022-01-03 | 28.122.142/0001-40 // XP INVESTOR IBOVESPA ATI... |  Ações          |  1.402952   |      7401 |     59237924.90 |
-| 2022-01-03 | 28.098.599/0001-67 // HAWK FUNDO DE INVESTIMEN... |  Ações          |  1.963080   |        12 |     94788040.60 |
-| 2022-01-03 | 28.076.506/0001-01 // CSHG ALLOCATION EQUITAS ... |  Ações          |  1.099504   |        78 |     24340094.17 |
-| 2022-01-03 | 28.075.715/0001-22 // CSHG ALLOCATION MILES VI... |  Ações          |  1.577636   |       107 |    148464847.88 |
+| CNPJ_FUNDO         |   NR_COTST | VL_PATRIM_LIQ   | VL_QUOTA   | VL_TOTAL       | CAPTC_DIA   | RESG_DIA     |
+|--------------------|------------|-----------------|------------|----------------|-------------|--------------|
+| 05.108.305/0001-35 |         40 | 33.728.834,88   | 16,84      | 33.788.580,70  | 0,00        | 0,00         |
+| 11.003.123/0001-00 |         53 | 103.376.335,90  | 4,49       | 103.387.546,16 | 0,00        | 0,00         |
+| 03.565.811/0001-28 |        361 | 359.491.503,21  | 14.865,45  | 362.322.961,65 | 0,00        | 2.703.491,65 |
+| 25.108.749/0001-88 |         16 | 18.910.705,85   | 1,60       | 17.767.469,72  | 0,00        | 0,00         |
+| 01.045.437/0001-04 |        101 | 4.957.882,64    | 16,58      | 4.958.578,47   | 0,00        | 0,00         |
 ```
 
 Importante ressaltar que todos os Fundos que são retornados possuem SIT ou situação CVM como "EM FUNCIONAMENTO NORMAL".
+Os dados históricos dos fundos contém alguns problemas como: repetição do mesmo fundo em classes iguais com nomes diferentes e
+alterações em nome das colunas ou, até mesmo, ausência de alguma coluna. Para contornar, filtramos os tipos de fundos como:
+`'FI', 'FIF' ou'CLASSES - FIF` e não retornamos com essa coluna, mas a informação pode ser obtida a posteriori, veja a seguir.
 
-Se desejar capturar todas as classes de fundos, basta não restringir a variável classe. No exemplo seguinte,
-também não há restrições sobre fundos com número de cotistas, tampouco sobre o patrimônio líquido. Nesse exemplo, não está sendo utilizada a configuração da proxy.
+Todas as informações adicionais sobre os fundos como: classificação ANBIMA, classe, Denominação Social (Nome do Fundo), Condomínio, Custodiante, etc estão disponíveis no cadastro dos fundos. Para obte-lo, basta invocar a função abaixo:
 
 ```python
-informe_diario_fundos_historico = comp.fundosbr(anos=range(2021,2022), #somente 2021
-                                                meses=range(1,3), #somente Jan e Fev)
+cadastro = comp.get_cadastro_fundos(classe=comp.get_classes(), proxy=proxies, output_format='polars')
 ```
-O exemplo acima demora mais para ser executado, uma vez que obtém todos os Fundos dentro do período selecionado. 
-Caso deseje, por exemplo, apenas algunas classes de Fundos, como: Fundos de Ações e de Renda Fixa, siga o exemplo abaixo.
-
-Também é possível consultar os tipos de classe disponíveis.
+Caso deseje filtrar apenas algunas classes de Fundos, siga o exemplo abaixo que filtra por fundos de ações.
 
 ```python
-informe_diario_fundos_historico = comp.fundosbr(anos=range(2021,2022), #somente 2021
-                                              meses=range(1,3), #somente Jan e Fev,
-                                              classe=["Renda Fixa", "Ações"])
-
-#Para obter as classes disponíveis:
-comp.get_classes()
+print(comp.get_classes())
+cadastro = comp.get_cadastro_fundos(classe=["Ações"], proxy=proxies, output_format='polars')
 ```
 
 Para obter o retorno dos Fundos, chame a função `calcula_risco_retorno_fundos` passando os dados dos fundos que acabou de obter.
