@@ -97,7 +97,7 @@ Para cruzar as informações diárias e de cadastro, execute:
 informe_completo = comp.mesclar_bases(cadastro, informe_diario_fundos_historico)
 ```
 
-Os estudos com os fundos são executados sobre uma série temporal de retorno diário dos fundos. Com `informe_completo` pode-se
+Os estudos com os fundos são executados sobre uma série temporal das cotas diárias dos fundos. Com `informe_completo` pode-se
 filtrar os fundos que interessam para sua análise. Uma coluna adicional foi criada para conjugar CNPJ do Fundo a seu Nome (CNPJ - Nome).
 
 Caso esteja utilizando `polars`, obtenha a série temporal da seguinte forma:
@@ -117,31 +117,27 @@ serie_temporal_fundos = serie_temporal_fundos.sort_values(['DT_COMPTC'])
 ```
 
 Para obter o retorno dos Fundos, chame a função `calcula_risco_retorno_fundos` passando os dados dos fundos que acabou de obter.
+Caso esteja trabalhando até aqui com `polars`, deve-se mudar para `pandas` usando comando `serie_temporal_fundos.to_pandas().set_index('DT_COMPTC')`, pois as demais funções não foram implementadas em `polars`.
 
 ```python
-(  risco_retorno,
-    cotas_normalizadas,
-    rentabilidade_media_anualizada,
-    rentabilidade_acumulada_por_ano,
-    rentabilidade_fundos_total,
-) = comp.calcula_risco_retorno_fundos(informe_diario_fundos_historico)
+(risco_retorno, rentabilidade_fundos_diaria, 
+    cotas_normalizadas, rentabilidade_fundos_acumulada,
+    rentabilidade_acumulada_por_ano) = comp.calcula_risco_retorno_fundos(serie_temporal_fundos)
 ```
 
-O primeiro dataframe indica tanto o risco (volatidade padrão) de cada fundo, por CNPJ, quanto sua rentabilidade, ambos anualizados. Já o segundo dataframe retorna o valor das cotas dos fundos normalizadas no período selecionado, o que facilita para comparação (veja a seguir nos gráficos).
-
-Os demais dataframes retornam as rentabilidades média anualizada, acumulada por ano e a rentabilidade total no período, respectivamente.
+O primeiro dataframe indica tanto o risco (volatidade padrão) de cada fundo, por CNPJ - Nome, quanto sua rentabilidade, ambos anualizados. O segundo dataframe provê os retornos diários de cada fundo. Já o terceiro dataframe retorna o valor das cotas dos fundos normalizadas no período selecionado. Os demais dataframes retornam as rentabilidades acumulada por ano e a rentabilidade total no período, respectivamente.
 
 A forma mais eficiente para comparar o desempenho dos Fundos é usando gráficos. Você pode plotar o risco x retorno dos Fundos e comparar com seu benchmark ou sua carteira de investimentos. Aqui não vamos calcular pra você a rentabilidade da sua carteira, apenas usar esse dado para comparar com  os fundos selecionados. Veja o exemplo:
 
 ```python
-df4 = risco_retorno[
-                    (risco_retorno["volatilidade"] <= 40)
-                    & (risco_retorno["rentabilidade"] >= 0)
-                    & (risco_retorno["rentabilidade"] <= 100)
-                    ]
+risco_retorno_filtrado = risco_retorno[
+                                    (risco_retorno["volatilidade"] <= 40)
+                                    & (risco_retorno["rentabilidade"] >= 0)
+                                    & (risco_retorno["rentabilidade"] <= 100)
+                                    ]
 
 comp.plotar_comparacao_risco_retorno(
-                                df4,
+                                risco_retorno_filtrado,
                                 (21, 18), #(risco, retorno) da minha carteira
                                 (19, 15), #(risco, retorno) do benchmark
                                 nome_carteira="Minha Carteira",
@@ -159,13 +155,13 @@ plt.show()
 <img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/figura3.png" style="width:100%;"/>
 </center>
 
-Uma outra forma de comparação é utilizando as cotas iniciando em um valor inicial de 100, arbitrário. Assim a comparação fica facilitada.
+Uma outra forma de comparação é utilizando as cotas iniciando em um valor inicial de 1, arbitrário. Caso deseje visualizar a evolução do investimento, basta multiplicar o dataframe, assim a comparação fica facilitada.
 
 A função `plotar_evolucao` encontra os Fundos tanto por CNPJ quanto por Nome, ou seja, se deseja obter todos os Fundos que possuam Bradesco no Nome, basta informa na variável `lista_fundos=["Bradesco"]`.
 
 Para facilitar a comparação, você pode personalizar o gráfico para destacar o melhor e o pior Fundo, além de plotar o seu benchmark.
 
-Os benchmarks disponíveis são: CDI, IMA-B, IMA-B 5, IMA-B 5+, Ibovespa e Ações diversas listadas na B3.
+Os benchmarks disponíveis são: CDI, IMA-S, IMA-B5, IMA-B5+, IMA-B5 P2, IRFM, IRFM P2, IHFA, Ibovespa, DIVO11 (IDIV), SP500 e Ações diversas listadas na B3.
 
 ```python
 cdi, cdi_acumulado = comp.get_benchmark("2022-01-01", 

@@ -159,15 +159,18 @@ def get_stocks(
         for st in acoes:
             if not st.endswith(".SA"): st = st+".SA"
             if proxy:
-                df = yf.download(st, start=data_inicio, end=data_fim, proxy=proxy)
+                df = yf.download(st, start=data_inicio, end=data_fim, proxy=proxy)['Adj Close']
             else:
-                df = yf.download(st, start=data_inicio, end=data_fim)
+                df = yf.download(st, start=data_inicio, end=data_fim)['Adj Close']
             df1 = pd.concat([df, df1], axis=1)
     else:
         if not acoes.endswith(".SA"): acoes = acoes+".SA"
         if proxy:
-            df1 = yf.download(acoes, start=data_inicio, end=data_fim, proxy=proxy)
+            df1 = yf.download(acoes, start=data_inicio, end=data_fim, proxy=proxy)['Adj Close']
         else:
-            df1 = yf.download(acoes, start=data_inicio, end=data_fim)
+            df1 = yf.download(acoes, start=data_inicio, end=data_fim)['Adj Close']
     df1.index = pd.to_datetime(df1.index)
+    for cols in df1.columns:
+        df1[f'Retorno {cols}'] = df1[cols].pct_change()
+        df1[f'Retorno Acumulado {cols}'] = (1+df1[f'Retorno {cols}']).cumprod()-1
     return df1
