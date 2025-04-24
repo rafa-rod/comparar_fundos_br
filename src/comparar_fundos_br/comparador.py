@@ -235,22 +235,22 @@ def plotar_evolucao(
         print("Fundo não encontrado")
         return None
 
-def plotar_rentabilidade_janela_movel(df, HP, benchmarks):
+def plotar_rentabilidade_janela_movel(df: pd.DataFrame, HP: int, benchmarks: pd.DataFrame) -> None:
     for fundo in df.columns:
-        retorno = calcula_retorno_janelas_moveis(df, HP, benchmarks)
+        retorno = calcula_retorno_janelas_moveis(df[[fundo]], HP, benchmarks)
         
         plt.figure(figsize=(15, 6))
         plt.suptitle(f"Retorno de {HP} dias")
-        plt.plot(retorno[fundo].multiply(100))
-        plt.plot(retorno[benchmarks.columns.tolist()].multiply(100), lw=1, alpha=0.7)
+        plt.plot(retorno[fundo].multiply(100), lw=2)
+        plt.plot(retorno[benchmarks.columns.tolist()].multiply(100), lw=1, alpha=0.8)
         plt.xticks(rotation=45)
         plt.xlabel('')
-        plt.ylabel("%", rotation=0, labelpad=-15, loc="top")
+        plt.ylabel("%\n", rotation=0, labelpad=-15, loc="top")
         plt.legend([fundo.split("//")[-1]]+benchmarks.columns.tolist(), loc="upper right", frameon=False,
                      bbox_to_anchor=(0.5, 0.67, 0.5, 0.5))
         plt.tight_layout()
         plt.box(False)
-        plt.grid(axis="x")
+        plt.grid(True, axis="x")
     plt.show()
 
 def plotar_comparacao_risco_retorno(
@@ -303,85 +303,15 @@ def plotar_comparacao_risco_retorno(
             arrowprops=dict(arrowstyle="->", color="r", connectionstyle="arc3,rad=-0.1"),
         )
 
-def plotar_heatmap_rentabilidade(retorno_diario: pd.DataFrame, period: str = 'M') -> None:
-    '''Função que plota gráfico tipo heatmap que exibe o desempenho do fundo ou do benchmark no periodo indicado, que pode ser:
-    -mensal (M), 
-    -trimestral (Q), 
-    -semestral (sem) ou 
-    -anual (Y)
-    Como entrada de dados, a função precisa do dataframe do retorno diário do fundo ou do benchmark.
-    '''
-    cmap = LinearSegmentedColormap.from_list(name='t',
-        colors=["red", "white", 'green']
-    )
-    nome = retorno_diario.columns[0]
-    returns, freq = _retorno_heatmap(retorno_diario, period, nome)
-
-    grayscale=False
-    ylabel=True
-    fontname="Arial"
-    annot_size=10
-
-    #cmap = sns.diverging_palette(0, 110, s=1650, n=10, as_cmap=True)
-    fig, ax = plt.subplots(figsize=(10,5))
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
-    ax.spines["left"].set_visible(False)
-
-    fig.set_facecolor("white")
-    ax.set_facecolor("white")
-
-    ax.set_title(
-         f"Retornos {freq[1]} (%) - {nome}\n",
-        fontsize=14,
-        y=0.995,
-        fontname=fontname,
-        fontweight="bold",
-        color="black",
-    )
-    ax = _sns.heatmap(
-                returns,
-                ax=ax,
-                annot=True,
-                center=0,
-                annot_kws={"size": 10},
-                fmt="0.2f",
-                linewidths=0.5,
-                square=False,
-                cbar=True,
-                cmap=cmap,
-                cbar_kws={"format": "%.0f%%"},
-            )
-
-    # align plot to match other
-    if ylabel:
-        ax.set_ylabel("Ano", fontname=fontname, fontweight="bold", fontsize=12, rotation=0)
-        ax.yaxis.set_label_coords(-0.1, 0.5)
-
-    ax.tick_params(colors="#808080")
-    plt.xticks(rotation=0, fontsize=annot_size * 1.2)
-    plt.yticks(rotation=0, fontsize=annot_size * 1.2)
-
-    try:
-        plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-    try:
-        fig.tight_layout(w_pad=0, h_pad=0)
-    except Exception:
-        pass
-
-    plt.show(block=False)
-    plt.close()
-
-def supera_benchmark(dados, benchmarks, period, limit=0.6):
+def supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int, limit: float = 0.6) -> pd.DataFrame:
+    '''Função que indica a porcentagem de vezes em que o fundo supera o benchmark no periodo selecionado.
+    O corte é dado pelo parâmetro limit.'''
     percentuais = pd.DataFrame()
     lista_benchmarks = [x for x in benchmarks.columns if 'Retorno' not in x]
     for i, fundo in enumerate(tqdm(dados.columns.tolist())):
         df1 = pd.DataFrame()
         for bench in lista_benchmarks:
-            retorno = calcula_retorno_janelas_moveis(dados[[fundo]], period, benchmarks[[bench]])
+            retorno = calcula_retorno_janelas_moveis(dados[[fundo]], HP, benchmarks[[bench]])
             retorno = retorno.sort_index().dropna()
             if retorno.empty: break
             eventos = (retorno[fundo] - retorno[bench])
@@ -392,13 +322,16 @@ def supera_benchmark(dados, benchmarks, period, limit=0.6):
         percentuais = pd.concat([percentuais, df1], axis=0)
     return percentuais[(percentuais>=limit*100)].dropna().sort_values(percentuais.columns.tolist(), ascending=False)
 
-def qto_supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, period: int) -> pd.DataFrame:
+def qto_supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int) -> pd.DataFrame:
+    '''Enquanto a função *supera_benchmark* indica se um fundo supera o benchmark.
+    Essa função exibe o quanto os fundos superaram o benchmark, em média. E também o quanto eles 
+    ficam abaixo do benchmark, em média'''
     percentuais = pd.DataFrame()
     lista_benchmarks = [x for x in benchmarks.columns if 'Retorno' not in x]
     for i, fundo in enumerate(tqdm(dados.columns.tolist())):
         df1 = pd.DataFrame()
         for bench in lista_benchmarks:
-            retorno = calcula_retorno_janelas_moveis(dados[[fundo]], period, benchmarks[[bench]])
+            retorno = calcula_retorno_janelas_moveis(dados[[fundo]], HP, benchmarks[[bench]])
             retorno = retorno.sort_index().dropna()
             if retorno.empty: break
             eventos = (retorno[fundo] - retorno[bench])
@@ -476,7 +409,6 @@ def plotar_heatmap_rentabilidade(retorno_diario: pd.DataFrame, period: str = 'M'
     fontname="Arial"
     annot_size=10
 
-    #cmap = sns.diverging_palette(0, 110, s=1650, n=10, as_cmap=True)
     fig, ax = plt.subplots(figsize=(10,5))
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -494,7 +426,7 @@ def plotar_heatmap_rentabilidade(retorno_diario: pd.DataFrame, period: str = 'M'
         fontweight="bold",
         color="black",
     )
-    ax = _sns.heatmap(
+    ax = sns.heatmap(
                 returns,
                 ax=ax,
                 annot=True,
@@ -531,7 +463,7 @@ def plotar_heatmap_rentabilidade(retorno_diario: pd.DataFrame, period: str = 'M'
 
 def plotar_heatmap_comparar_benchmark(rentabilidade_diaria_fundos: pd.DataFrame,
                                       rentabilidade_diaria_benchmarks: pd.DataFrame,
-                                      period="M") -> None:
+                                      period: str = "M") -> None:
     '''Função que exibe gráfico heatmap para facilitar a comparação de desempenho de um fundo com seu benchmark.
     O gráfico uma coluna Ultrapassa Benchmark onde indica, em %, quanto o fundo superou o benchmark no periodo (period), que pode ser:
     -mensal (M), 

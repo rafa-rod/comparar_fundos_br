@@ -61,14 +61,13 @@ informe_diario_fundos_historico.head()
 ```
 
 ```
-| DT_COMPTC           | CNPJ_FUNDO         |   NR_COTST | VL_PATRIM_LIQ    | VL_QUOTA   | VL_TOTAL         | CAPTC_DIA   | RESG_DIA     |
-|---------------------|--------------------|------------|------------------|------------|------------------|-------------|--------------|
-| 2021-01-04 00:00:00 | 14.298.639/0001-00 |         24 | 20.453.521,63    | 0,81       | 20.420.656,04    | 0,00        | 0,00         |
-| 2021-01-04 00:00:00 | 31.713.528/0001-31 |         83 | 31.041.132,44    | 1,24       | 31.045.695,45    | 0,00        | 0,00         |
-| 2021-01-04 00:00:00 | 31.533.145/0001-81 |       3367 | 1.028.192.777,11 | 1,79       | 1.029.976.324,40 | 790.500,00  | 6.955.880,12 |
-| 2021-01-04 00:00:00 | 09.181.287/0001-78 |        502 | 666.290.024,51   | 3,05       | 666.325.870,37   | 24.000,00   | 330.412,68   |
-| 2021-01-04 00:00:00 | 29.106.540/0001-36 |         26 | 237.930.377,62   | 126,01     | 237.937.564,12   | 0,00        | 0,00         |
-
+| DT_COMPTC           | CNPJ_FUNDO         |   NR_COTST | VL_PATRIM_LIQ   | VL_QUOTA   | VL_TOTAL       | CAPTC_DIA   | RESG_DIA   |
+|---------------------|--------------------|------------|-----------------|------------|----------------|-------------|------------|
+| 2022-01-03 00:00:00 | 41.778.228/0001-94 |         23 | 22.282.945,45   | 1,03       | 22.366.555,70  | 0,00        | 0,00       |
+| 2022-01-03 00:00:00 | 05.090.905/0001-13 |         65 | 1.645.439,95    | 5,39       | 1.624.983,60   | 0,00        | 0,00       |
+| 2022-01-03 00:00:00 | 34.271.097/0001-99 |         12 | 15.971.287,49   | 1,06       | 15.998.464,03  | 0,00        | 0,00       |
+| 2022-01-03 00:00:00 | 18.298.411/0001-70 |         71 | 287.276.414,66  | 3,31       | 288.767.536,79 | 0,00        | 200.000,00 |
+| 2022-01-03 00:00:00 | 40.905.548/0001-03 |         17 | 28.068.429,23   | 1.083,46   | 28.207.991,86  | 35.200,00   | 0,00       |
 ```
 
 Os dados históricos dos fundos contém alguns problemas como: repetição do mesmo fundo em classes iguais com nomes diferentes e
@@ -162,23 +161,28 @@ A função `plotar_evolucao` encontra os Fundos tanto por CNPJ quanto por Nome, 
 Para facilitar a comparação, você pode personalizar o gráfico para destacar o melhor e o pior Fundo, além de plotar o seu benchmark.
 
 Os benchmarks disponíveis são: CDI, IMA-S, IMA-B5, IMA-B5+, IMA-B5 P2, IRFM, IRFM P2, IHFA, Ibovespa, DIVO11 (IDIV), SP500 e Ações diversas listadas na B3.
+A função retorna os valores de cada ticker, retorno diário e retorno acumulado no período indicado.
 
 ```python
-cdi, cdi_acumulado = comp.get_benchmark("2022-01-01", 
-                                        "2022-07-22", 
-                                        benchmark = "cdi", 
-                                        proxy=proxies)
+data_inicio, data_fim = serie_temporal_fundos.index[0], serie_temporal_fundos.index[-1]
+
+cdi = comp.get_benchmarks(data_inicio, data_fim, benchmark="cdi", metodo_cdi='anbima', proxy=proxies)
+ibov = comp.get_benchmarks(data_inicio, data_fim, benchmark="ibov", proxy=proxies)
+sp500 = comp.get_benchmarks(data_inicio, data_fim, benchmark="sp500", proxy=proxies)
+idiv = comp.get_benchmarks(data_inicio, data_fim, benchmark="divo11", proxy=proxies)
+acoes = comp.get_stocks(['VALE3', 'PETR4'], data_inicio, data_fim, proxy=proxies)
+df_benchmarks = pd.concat([cdi, ibov, sp500, idiv, acoes], axis=1).sort_index()
 
 data = comp.plotar_evolucao(
-                cotas_normalizadas,
+                cotas_normalizadas*100,
                 lista_fundos=["03.916.081/0001-62","06.916.384/0001-73"],
                 figsize=(15, 5),
                 color="darkblue",
                 alpha=0.8
                 )
 plt.title("Evolução dos Fundos")
-plt.plot(cdi_acumulado*100, label="CDI")
-plt.legend(frameon=False, loc="center right")
+plt.plot((1+df_benchmarks[['Retorno Acumulado CDI']].dropna().fillna(0))*100, label="CDI", color='red', linestyle='--')
+plt.legend(frameon=False, loc="upper right")
 plt.show()
 ```
 
@@ -187,26 +191,21 @@ plt.show()
 </center>
 
 ```python
-indice_ibov, indice_ibov_acumulado = comp.get_benchmark("2022-01-01", 
-                                                        "2022-07-25", 
-                                                        benchmark = "ibov",
-                                                        proxy=proxies)
-
 data = comp.plotar_evolucao(
-                cotas_normalizadas,
-                lista_fundos=["Bradesco"],
-                figsize=(15, 5),
-                color="gray",
-                alpha=0.2,
-                color_maximo="orange",
-                color_minimo="blue",
-                color_seta_maximo="orange",
-                color_seta_minimo="blue",
-                posicao_texto_maximo=(-100, -45),
-                posicao_texto_minimo=(-100, 40),
-                )
+                            cotas_normalizadas*100,
+                            lista_fundos=["Bradesco"],
+                            figsize=(15, 5),
+                            color="gray",
+                            alpha=0.2,
+                            color_maximo="orange",
+                            color_minimo="blue",
+                            color_seta_maximo="orange",
+                            color_seta_minimo="blue",
+                            posicao_texto_maximo=(-100, 35),
+                            posicao_texto_minimo=(-100, 10),
+                            )
 plt.title("Evolução dos Fundos que contenham Bradesco no nome")
-plt.plot(indice_ibov_acumulado*100, label="Ibovespa", color="red", lw=3)
+plt.plot((1+ibov[['Retorno Acumulado IBOV']].fillna(0))*100, label="Ibovespa", color="red", lw=3)
 plt.legend(frameon=False, loc="upper center")
 plt.show()
 ```
@@ -220,20 +219,17 @@ Ainda é possível listar os Fundos de maior e pior desempenho:
 ```python
 melhores = data.iloc[-1:].T.dropna().sort_values(data.index[-1], ascending=False)
 melhores.columns = ["Evolução"]
-melhores = melhores.reset_index()
-melhores[['CNPJ', 'DENOM SOCIAL']] = melhores['CNPJ - Nome'].str.split(' // ', 1, expand=True)
-melhores = melhores.drop('CNPJ - Nome', axis=1)
 melhores.head()
 ```
 
 ```
-| Evolução   |         CNPJ       |   DENOM SOCIAL                                       |
-|:-----------|:------------------:|-----------------------------------------------------:|
-| 172.542213 | 10.590.125/0001-72 |  BRADESCO FUNDO DE INVESTIMENTO EM AÇÕES CIELO       | 
-| 127.689792 | 03.916.081/0001-62 |  BRADESCO FUNDO DE INVESTIMENTO EM AÇÕES PETROBRAS   |
-| 127.658068 | 03.922.006/0001-04 |  BRADESCO H FUNDO DE INVESTIMENTO AÇÕES PETROBRAS    |
-| 127.449134 | 17.489.100/0001-26 |  BRADESCO FUNDO DE INVESTIMENTO EM AÇÕES BB SEG...   |
-| 127.296598 | 11.504.894/0001-73 |  BRADESCO FUNDO DE INVESTIMENTO EM AÇÕES - PETR...   |
+| CNPJ - Nome                                                                                                  |   Evolução |
+|--------------------------------------------------------------------------------------------------------------|------------|
+| 03.916.081/0001-62 // BRADESCO FIF - CLASSE DE INVESTIMENTO EM AÇÕES PETROBRAS - RESPONSABILIDADE LIMITADA   |    141.402 |
+| 03.922.006/0001-04 // BRADESCO H FIF - CLASSE DE INVESTIMENTO EM AÇÕES PETROBRAS - RESPONSABILIDADE LIMITADA |    141.294 |
+| 04.884.567/0001-29 // BRADESCO BA FIF - CLASSE DE INVESTIMENTO EM AÇÕES VALE -RESP LIMITADA                  |    124.039 |
+| 04.882.617/0001-39 // BRADESCO FIF - CLASSE DE INVESTIMENTO EM AÇÕES VALE - RESPONSABILIDADE LIMITADA        |    123.804 |
+| 04.892.107/0001-42 // BRADESCO H FIF - CLASSE DE INVESTIMENTO EM AÇÕES VALE DO RIO DOCE - RESP LIMITADA      |    123.724 |
 ```
 
 Para Fundos de Participação (FIPs) e Fundos de Direitos Creditórios (FIDCs), a sistemática é diferente. Enquanto os FIPs tem seus resultados divulgados trimestralmente, os FIDCs são mensalmente divulgados. Assim, para obte-los, basta codar:
