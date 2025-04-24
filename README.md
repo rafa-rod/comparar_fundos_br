@@ -180,7 +180,7 @@ data = comp.plotar_evolucao(
                 color="darkblue",
                 alpha=0.8
                 )
-plt.title("Evolução dos Fundos")
+plt.suptitle("Evolução dos Fundos")
 plt.plot((1+df_benchmarks[['Retorno Acumulado CDI']].dropna().fillna(0))*100, label="CDI", color='red', linestyle='--')
 plt.legend(frameon=False, loc="upper right")
 plt.show()
@@ -204,7 +204,7 @@ data = comp.plotar_evolucao(
                             posicao_texto_maximo=(-100, 35),
                             posicao_texto_minimo=(-100, 10),
                             )
-plt.title("Evolução dos Fundos que contenham Bradesco no nome")
+plt.suptitle("Evolução dos Fundos que contenham Bradesco no nome")
 plt.plot((1+ibov[['Retorno Acumulado IBOV']].fillna(0))*100, label="Ibovespa", color="red", lw=3)
 plt.legend(frameon=False, loc="upper center")
 plt.show()
