@@ -379,7 +379,7 @@ def _calcula_rentabilidade_periodo(rentabilidade_diaria: pd.DataFrame, freq: str
     return rentabilidade_periodo_total.asfreq(f"{freq}E")
 
 def _retorno_heatmap(retorno_diario: pd.DataFrame, period: str, nome: str) -> Union[pd.DataFrame, List[str]]:
-    returns = _calcula_rentabilidade_periodo(retorno_diario, period.upper())
+    returns = _calcula_rentabilidade_periodo(retorno_diario, period.upper())*100
     frequencia = period if period=='sem' else str(returns.index.freq).replace('<','').replace('>','')
     freq = _traduz_frequencia(frequencia)
     f = _repetir_elemento(list(range(1, returns.index.month[:-1].nunique()+1)))
@@ -419,7 +419,7 @@ def plotar_heatmap_rentabilidade(retorno_diario: pd.DataFrame, period: str = 'M'
     ax.set_facecolor("white")
 
     ax.set_title(
-         f"Retornos {freq[1]} (%) - {nome}\n",
+         f"Retornos {freq[1]} (%) - {nome.title()}\n",
         fontsize=14,
         y=0.995,
         fontname=fontname,
