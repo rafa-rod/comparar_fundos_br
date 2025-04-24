@@ -57,11 +57,11 @@ def calcula_risco_retorno_fundos(
     Parâmetros:
     -dados_fundos_cvm (dataframe): série temporal contendo as cotas diarias dos fundos. Cada coluna deve ser a cota de um fundo e índice as datas.
     Retorno:
-    -risco_retorno (dataframe): contém volatilidade anualizada e retorno de todo o periodo também anualizado, multiplicado por 100;
-    -rentabilidade_fundos_diaria (dataframe): retorno diário dos fundos, multiplicado por 100;
+    -risco_retorno (dataframe): contém volatilidade anualizada e retorno de todo o periodo também anualizado;
+    -rentabilidade_fundos_diaria (dataframe): retorno diário dos fundos;
     -cotas_normalizadas (dataframe): valor das cotas diárias normalizada começando com valor unitário;
-    -rentabilidade_fundos_acumulada (dataframe): rentabilidade acumulada de todo o período, multiplicado por 100;
-    -rentabilidade_acumulada_por_ano (dataframe): rentabilidade acumulada por cada ano, multiplicado por 100;
+    -rentabilidade_fundos_acumulada (dataframe): rentabilidade acumulada de todo o período;
+    -rentabilidade_acumulada_por_ano (dataframe): rentabilidade acumulada por cada ano;
     -rentabilidade_fundos_total (dataframe): rentabilidade total de todo o periodo'''
     serie_fundos = dados_fundos_cvm.copy()
     cotas_normalizadas = _get_cotas_normalizadas(serie_fundos)
@@ -81,11 +81,11 @@ def calcula_risco_retorno_fundos(
 
     risco_retorno = pd.concat([volatilidade_fundos, retorno_periodo_anualizado], axis=1)
     return (
-            risco_retorno.dropna().sort_values("rentabilidade", ascending=False)*100,
-            rentabilidade_fundos_diaria*100,
+            risco_retorno.dropna().sort_values("rentabilidade", ascending=False),
+            rentabilidade_fundos_diaria,
             cotas_normalizadas,
-            rentabilidade_fundos_acumulada*100,
-            rentabilidade_acumulada_por_ano*100
+            rentabilidade_fundos_acumulada,
+            rentabilidade_acumulada_por_ano
             )
 
 def remove_outliers(df: pd.DataFrame, col: str, q: float = 0.05) -> pd.DataFrame:
@@ -120,7 +120,7 @@ def plotar_comparacao_risco_retorno(
     plt.xlabel("Volatilidade (%aa)")
     plt.suptitle('Risco x Retorno')
     plt.box(False)
-    plt.grid(True, axis="y")
+    plt.grid(axis="y")
     plt.ylim(opcionais.get("ylim"))
     plt.xlim(opcionais.get("xlim"))
     if risco_retorno_carteira:
@@ -182,7 +182,7 @@ def plotar_evolucao(
         plt.ylabel("Cotas\n", rotation=0, labelpad=-20, loc="top")
         plt.xlabel("")
         plt.box(False)
-        plt.grid(True, axis="y")
+        plt.grid(axis="y")
         plt.ylim(opcionais.get("ylim"))
         plt.xlim(opcionais.get("xlim"))
         plt.annotate(
@@ -227,7 +227,7 @@ def plotar_evolucao(
         plt.ylabel("Cotas\n", rotation=0, labelpad=-20, loc="top")
         plt.xlabel("")
         plt.box(False)
-        plt.grid(True, axis="y")
+        plt.grid(axis="y")
         plt.ylim(opcionais.get("ylim"))
         plt.xlim(opcionais.get("xlim"))
         return data
@@ -250,7 +250,7 @@ def plotar_rentabilidade_janela_movel(df: pd.DataFrame, HP: int, benchmarks: pd.
                      bbox_to_anchor=(0.5, 0.67, 0.5, 0.5))
         plt.tight_layout()
         plt.box(False)
-        plt.grid(True, axis="x")
+        plt.grid(axis="x")
     plt.show()
 
 def plotar_comparacao_risco_retorno(
@@ -277,7 +277,7 @@ def plotar_comparacao_risco_retorno(
     plt.ylabel("Retorno (%aa)\n", rotation=0, labelpad=-70, loc="top")
     plt.xlabel("Volatilidade (%aa)")
     plt.box(False)
-    plt.grid(True, axis="y")
+    plt.grid(axis="y")
     plt.ylim(opcionais.get("ylim"))
     plt.xlim(opcionais.get("xlim"))
     if risco_retorno_carteira:
@@ -379,7 +379,7 @@ def _calcula_rentabilidade_periodo(rentabilidade_diaria: pd.DataFrame, freq: str
     return rentabilidade_periodo_total.asfreq(f"{freq}E")
 
 def _retorno_heatmap(retorno_diario: pd.DataFrame, period: str, nome: str) -> Union[pd.DataFrame, List[str]]:
-    returns = _calcula_rentabilidade_periodo(retorno_diario, period.upper())*100
+    returns = _calcula_rentabilidade_periodo(retorno_diario, period.upper())
     frequencia = period if period=='sem' else str(returns.index.freq).replace('<','').replace('>','')
     freq = _traduz_frequencia(frequencia)
     f = _repetir_elemento(list(range(1, returns.index.month[:-1].nunique()+1)))
