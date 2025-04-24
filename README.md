@@ -71,7 +71,6 @@ informe_diario_fundos_historico.head()
 
 ```
 
-Importante ressaltar que todos os Fundos que são retornados possuem SIT ou situação CVM como "EM FUNCIONAMENTO NORMAL".
 Os dados históricos dos fundos contém alguns problemas como: repetição do mesmo fundo em classes iguais com nomes diferentes e
 alterações em nome das colunas ou, até mesmo, ausência de alguma coluna. Para contornar, filtramos os tipos de fundos como:
 `'FI', 'FIF' ou'CLASSES - FIF` e não retornamos com essa coluna, mas a informação pode ser obtida a posteriori, veja a seguir.
@@ -90,10 +89,31 @@ cadastro = comp.get_cadastro_fundos(classe=["Ações"], proxy=proxies,
                                     output_format='polars')
 ```
 
-Para cruzar as informações, execute:
+Importante ressaltar que todos os Fundos que são retornados do cadastro possuem situação CVM como "EM FUNCIONAMENTO NORMAL", além de retornar somente o tipo de classe `Classes de Cotas de Fundos FIF` e classificação não nula.
+
+Para cruzar as informações diárias e de cadastro, execute:
 
 ```python
 informe_completo = comp.mesclar_bases(cadastro, informe_diario_fundos_historico)
+```
+
+Os estudos com os fundos são executados sobre uma série temporal de retorno diário dos fundos. Com `informe_completo` pode-se
+filtrar os fundos que interessam para sua análise. Uma coluna adicional foi criada para conjugar CNPJ do Fundo a seu Nome (CNPJ - Nome).
+
+Caso esteja utilizando `polars`, obtenha a série temporal da seguinte forma:
+
+```python
+serie_temporal_fundos = informe_completo.pivot(index="DT_COMPTC", columns="CNPJ - Nome",
+                                                 values="VL_QUOTA", aggregate_function='first')
+serie_temporal_fundos = serie_temporal_fundos.sort(['DT_COMPTC'])
+```
+
+Agora se estiver utilizando o `pandas`:
+
+```python
+serie_temporal_fundos = informe_completo.pivot_table(index="DT_COMPTC", columns="CNPJ - Nome",
+                                                     values="VL_QUOTA", aggfunc='first')
+serie_temporal_fundos = serie_temporal_fundos.sort_values(['DT_COMPTC'])
 ```
 
 Para obter o retorno dos Fundos, chame a função `calcula_risco_retorno_fundos` passando os dados dos fundos que acabou de obter.

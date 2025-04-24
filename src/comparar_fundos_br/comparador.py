@@ -69,8 +69,8 @@ def calcula_risco_retorno_fundos(
     rentabilidade_fundos_acumulada = (1 + rentabilidade_fundos_diaria).cumprod() - 1
 
     T = serie_fundos.shape[0]
-    valores_finais_nao_nulos = pd.DataFrame(_get_valores_finais(fundos_selecionados), index=fundos_selecionados.columns).T
-    retorno_periodo_anualizado = (((valores_finais_nao_nulos/ _get_valores_iniciais(fundos_selecionados))** (252 / T)- 1)).T
+    valores_finais_nao_nulos = pd.DataFrame(_get_valores_finais(cotas_normalizadas), index=cotas_normalizadas.columns).T
+    retorno_periodo_anualizado = (((valores_finais_nao_nulos/ _get_valores_iniciais(cotas_normalizadas))** (252 / T)- 1)).T
     retorno_periodo_anualizado.columns = ["rentabilidade"]
 
     rentabilidade_acumulada_por_ano = rentabilidade_fundos_acumulada.groupby(pd.Grouper(freq="Y")).last(1).T
