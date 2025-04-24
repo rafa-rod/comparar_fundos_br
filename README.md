@@ -232,6 +232,80 @@ melhores.head()
 | 04.892.107/0001-42 // BRADESCO H FIF - CLASSE DE INVESTIMENTO EM AÇÕES VALE DO RIO DOCE - RESP LIMITADA      |    123.724 |
 ```
 
+Uma forma eficiente de avaliar o desempenho dos fundos, é por meio de janelas móveis. Ao invocar a função `plotar_rentabilidade_janela_movel` informando a série temporal das cotas diárias, os benchmarks específicos e a janela de tempo ou *holding period (HP)*, veja:
+
+```python
+import random, matplotlib
+random.seed(12)
+matplotlib.style.use("fivethirtyeight")
+seleciona_um_fundo_aleatoriamente = random.sample(serie_temporal_fundos.iloc[0].dropna().index.tolist(), 1)
+
+comp.plotar_rentabilidade_janela_movel(serie_temporal_fundos[seleciona_um_fundo_aleatoriamente], 
+                                       3*252, df_benchmarks[['CDI', 'IBOV']] )
+```
+No exemplo acima, um fundo foi sorteado aleatoriamente; mas você pode ter outro critério para selecioná-lo. Importante a série dde benchmarks ter a mesma janela histórica disponível. **O HP escolhido foi de 3 anos, repare se o fundo selecionado tem dado suficiente para fazer essa análise.**
+
+<center>
+<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/plotar_rentabilidade_janela_movel.png" style="width:100%;"/>
+</center>
+
+Outra forma de avaliação é uma visão mais geral em períodos específicos padronizados como: mensal (M), trimestral (Q), semestral (sem) ou anual (Y) destacando as cores do retornos mais positivos e negativos. Basta informar os retornos diários e selecionar o período:
+
+```python
+comp.plotar_heatmap_rentabilidade(rentabilidade_fundos_diaria[seleciona_um_fundo_aleatoriamente], period='M')
+```
+
+<center>
+<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/plotar_heatmap_rentabilidade.png"
+style="width:100%;"/>
+</center>
+
+De forma complementar ao gráfico *heatmap* anterior, pode ser exibido uma figura que compara os retornos do período com seu benchmark. A última coluna *Ultrapassa Retorno CDI* (CDI escolhido no exemplo) representa o número de vezes que o fundo ultrapassou o benchmark sobre o total de períodos (se mensal, doze periodos).
+
+```python
+comp.plotar_heatmap_comparar_benchmark(rentabilidade_fundos_diaria[seleciona_um_fundo_aleatoriamente],
+                                          df_benchmarks[['Retorno CDI']],
+                                          "M")
+```
+
+<center>
+<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/plotar_heatmap_comparar_benchmark.png"
+style="width:100%;"/>
+</center>
+
+Agora fazendo de forma mais objetiva e menos visual, pode-se avaliar o desempenho de vários fundos com diversos benchmarks simultaneamente estabelecendo um limite de corte para exibir aqueles que superem os benchmarks em 60% das vezes, por exemplo.
+Veja o exemplo abaixo com 15 fundos e 3 benchmarks, em janela de 3 anos com limite de 60%:
+
+```python
+quinze_fundos_aleatorios = random.sample(serie_temporal_fundos_completo.iloc[0].dropna().index.tolist(), 15)
+fundos_selecionados_por_corte = comp.supera_benchmark(serie_temporal_fundos[quinze_fundos_aleatorios],
+                                                         df_benchmarks[['SP500', 'IBOV', 'CDI']], 3*252, 0.6)
+fundos_selecionados_por_corte
+```
+```
+| Fundo                                                                                                                   |   Supera IBOV (%) |   Supera CDI (%) |
+|-------------------------------------------------------------------------------------------------------------------------|-------------------|------------------|
+| 08.418.132/0001-40 // ITAU FLEXPREV VÉRTICE PRÉ FUNDO DE INVESTIMENTO FINANCEIRO RENDA FIXA - RESPONSABILIDADE LIMITADA |           67.7575 |          68.3916 |
+| 00.977.449/0001-04 // BNP PARIBAS GERDAU PREVIDÊNCIA 1 CLASSE DE INVESTIMENTO RENDA FIXA CREDITO PRIVADO RESP LIMITADA  |           66.4209 |          97.8812 |
+| 03.545.843/0001-61 // CARGILLPREV CD PREVIDENCIÁRIO MULTIMERCADO CRÉDITO PRIVADO - FUNDO DE INVESTIMENTO                |           66.2223 |          85.8377 |
+```
+Repare que apenas 3 fundos superaram seus benchmarks, exceto SP500, mais que 60% das vezes em janela móvel de 3 anos.
+
+Complementando, a análise acima, veja o quanto esses fundos ultrapassaram, em média, seus benchmarks e também quanto, em média, ficaram abaixo dos benchmarks:
+
+```python
+indice_superacao = comp.qto_supera_benchmark(serie_temporal_fundos[fundos_selecionados_por_corte.index.tolist()],
+                                             df_benchmarks[['IBOV', 'CDI']], 3*252)
+indice_superacao
+```
+```
+| Fundo                                                                                                                   |   Media Acima IBOV (%) |   Media Abaixo IBOV (%) |   Media Acima CDI (%) |   Media Abaixo CDI (%) |
+|-------------------------------------------------------------------------------------------------------------------------|------------------------|-------------------------|-----------------------|------------------------|
+| 00.977.449/0001-04 // BNP PARIBAS GERDAU PREVIDÊNCIA 1 CLASSE DE INVESTIMENTO RENDA FIXA CREDITO PRIVADO RESP LIMITADA  |                35.1578 |                -33.5267 |               2.10514 |              -0.822388 |
+| 03.545.843/0001-61 // CARGILLPREV CD PREVIDENCIÁRIO MULTIMERCADO CRÉDITO PRIVADO - FUNDO DE INVESTIMENTO                |                34.4475 |                -33.8336 |               1.63382 |              -0.470723 |
+| 08.418.132/0001-40 // ITAU FLEXPREV VÉRTICE PRÉ FUNDO DE INVESTIMENTO FINANCEIRO RENDA FIXA - RESPONSABILIDADE LIMITADA |                33.008  |                -23.7353 |              10.0789  |              -7.12265  |
+```
+
 Para Fundos de Participação (FIPs) e Fundos de Direitos Creditórios (FIDCs), a sistemática é diferente. Enquanto os FIPs tem seus resultados divulgados trimestralmente, os FIDCs são mensalmente divulgados. Assim, para obte-los, basta codar:
 
 ```python
@@ -247,3 +321,5 @@ for ano in [2020, 2021]:
         if not informe_fidcs.empty:
             informe_fidcs_all = pd.concat([informe_fidcs_all, informe_fidcs])
 ```
+
+*Os fundos exibidos acima são apenas exemplos mostrados aleatoriamente, não é recomendação de investimento ou desinvestimento.*
