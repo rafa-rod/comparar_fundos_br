@@ -87,7 +87,9 @@ def mesclar_bases(cadastro_fundos: pl.dataframe.frame.DataFrame, informe_diario_
     if isinstance(cadastro_fundos, pd.DataFrame):
         cadastro_fundos = pl.from_pandas(cadastro_fundos)
     if isinstance(informe_diario_fundos, pd.DataFrame):
-        informe_diario_fundos = pl.from_pandas(informe_diario_fundos)
+        if 'DT_COMPTC' not in informe_diario_fundos.columns:
+            informe_diario_fundos = informe_diario_fundos.reset_index()
+    informe_diario_fundos_historico = pl.from_pandas(informe_diario_fundos_historico)
     dados_completos_filtrados = informe_diario_fundos.join(cadastro_fundos, right_on=["CNPJ_Classe"], left_on=['CNPJ_FUNDO'], how="inner")
     dados_completos_filtrados = dados_completos_filtrados.with_columns(((pl.col('CNPJ_FUNDO')) + ' // ' + (pl.col('Denominacao_Social'))).alias('CNPJ - Nome'))
     if output_format.lower() == 'pandas':
