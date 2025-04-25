@@ -22,9 +22,11 @@ pd.set_option("display.max_columns", 10)
 pd.set_option("display.width", 1000)
 
 def get_classes() -> List[str]:
-    return ['Renda Fixa', 'Ações', 'Multimercado', 'Cambial']
+    '''Lista as classes disponíveis para filtro.'''
+    return ['Renda Fixa', 'Ações', 'Multimercado', 'Cambial', 'Curto Prazo', 'Referenciado']
 
 def pontua_cnpj(cnpj: str) -> str:
+    '''Efetua a pontuação do CNPJ'''
     if len(cnpj) < 14:
         cnpj = cnpj.zfill(14)
     cnpj = cnpj.replace("-","").replace(".","").replace("/","")
@@ -54,15 +56,26 @@ def get_cadastro_fundos(
     classe: Optional[Union[List[str], str]] = None, 
     proxy: Optional[Dict[str, str]] = None,
     output_format: str = 'pandas') -> Union[pd.DataFrame, pl.dataframe.frame.DataFrame]:
+    '''Busca o cadastro dos fundos em funcionamento normal, dos tipos FI, FIF e FIDC cuja classificação seja não nula
+    e busca sua respectiva classe.'''
     classes_disponiveis = get_classes()
     start = time.time()
-    url = "http://dados.cvm.gov.br/dados/FI/CAD/DADOS/registro_fundo_classe.zip"
-    arquivo = "registro_classe.csv"
-    resposta = _get_response(url, proxy=proxy)
-    fundos = _ler_zip_files(resposta, arquivo)
-    fundos_filtrado = fundos.filter( (pl.col('Situacao')=="Em Funcionamento Normal") &
-                                     (pl.col('Tipo_Classe')=='Classes de Cotas de Fundos FIF') &
-                                     (pl.col('Classificacao').is_not_null()) )
+    url1 = "http://dados.cvm.gov.br/dados/FI/CAD/DADOS/cad_fi_hist.zip"
+    resposta1 = _get_response(url1, proxy=proxy)
+    url2 = "http://dados.cvm.gov.br/dados/FI/CAD/DADOS/registro_fundo_classe.zip"
+    resposta2 = _get_response(url2, proxy=proxy)
+
+    arquivo1, arquivo2 = "registro_fundo.csv", "cad_fi_hist_classe.csv"
+    nome_dos_fundos = _ler_zip_files(resposta1, arquivo1)
+    nome_dos_fundos = nome_dos_fundos.filter( (pl.col('Situacao')=="Em Funcionamento Normal") &
+                                              (pl.col('Tipo_Fundo').is_in(['FI','FIDC','FIF'])) &
+                                              (pl.col('Classificacao').is_not_null()) )
+    nome_dos_fundos = nome_dos_fundos.rename({'CNPJ_Fundo':'CNPJ_FUNDO'})
+
+    classes_dos_fundos = _ler_zip_files(resposta2, arquivo2)
+    classes_dos_fundos = classes_dos_fundos.filter(pl.col('DT_FIM_CLASSE').is_null()) #classes atuais
+    fundos_filtrado = nome_dos_fundos.join(classes_dos_fundos, on='CNPJ_FUNDO', how='inner')
+
     if classe:
         if not isinstance(classe, list):
             classe = [classe]
@@ -70,11 +83,11 @@ def get_cadastro_fundos(
         if check_classes:
             raise ValueError(f"Classe não encontrada {check_classes}")
         fundos_filtrado = fundos_filtrado.filter(pl.col('Classificacao').is_in(classe))
-    for col in ['Data_Inicio', 'Data_Constituicao', 'Data_Registro']:
-        fundos_filtrado = fundos_filtrado.with_columns(pl.col(col).str.to_datetime("%Y-%m-%d"))
-    for col in ['ID_Registro_Fundo', 'ID_Registro_Classe', 'Codigo_CVM']:
-        fundos_filtrado = fundos_filtrado.with_columns(pl.col(col).cast(pl.Int64, strict=False))
-    fundos_filtrado = fundos_filtrado.with_columns(pl.col(["CNPJ_Classe"]).map_elements(pontua_cnpj))
+    #for col in ['Data_Inicio', 'Data_Constituicao', 'Data_Registro']:
+    #    fundos_filtrado = fundos_filtrado.with_columns(pl.col(col).str.to_datetime("%Y-%m-%d"))
+    #for col in ['ID_Registro_Fundo', 'ID_Registro_Classe', 'Codigo_CVM']:
+    #    fundos_filtrado = fundos_filtrado.with_columns(pl.col(col).cast(pl.Int64, strict=False))
+    fundos_filtrado = fundos_filtrado.with_columns(pl.col(["CNPJ_FUNDO"]).map_elements(pontua_cnpj))
     if output_format.lower() == 'pandas':
         fundos_filtrado = fundos_filtrado.to_pandas()
     print(f"Cadastro finalizado em {round((time.time()-start)/60,2)} minutos")
