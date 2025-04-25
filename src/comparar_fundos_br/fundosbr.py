@@ -75,6 +75,7 @@ def get_cadastro_fundos(
                                                                             'Classes de Cotas de Fundos FIDC'])) &
                                               (pl.col('Classificacao').is_not_null()) )
     nome_dos_fundos = nome_dos_fundos.rename({'CNPJ_Classe':'CNPJ_FUNDO'})
+    nome_dos_fundos = nome_dos_fundos.with_columns(pl.col(["CNPJ_FUNDO"]).map_elements(pontua_cnpj))
 
     fundos_filtrado = nome_dos_fundos.join(classes_dos_fundos, on='CNPJ_FUNDO', how='inner')
 
@@ -89,7 +90,7 @@ def get_cadastro_fundos(
     #    fundos_filtrado = fundos_filtrado.with_columns(pl.col(col).str.to_datetime("%Y-%m-%d"))
     #for col in ['ID_Registro_Fundo', 'ID_Registro_Classe', 'Codigo_CVM']:
     #    fundos_filtrado = fundos_filtrado.with_columns(pl.col(col).cast(pl.Int64, strict=False))
-    fundos_filtrado = fundos_filtrado.with_columns(pl.col(["CNPJ_FUNDO"]).map_elements(pontua_cnpj))
+    #fundos_filtrado = fundos_filtrado.with_columns(pl.col(["CNPJ_FUNDO"]).map_elements(pontua_cnpj))
     if output_format.lower() == 'pandas':
         fundos_filtrado = fundos_filtrado.to_pandas()
     print(f"Cadastro finalizado em {round((time.time()-start)/60,2)} minutos")
