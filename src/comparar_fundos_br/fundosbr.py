@@ -73,15 +73,16 @@ def get_cadastro_fundos(
                                                                             'Classes de Cotas de Fundos FIDC']))  )
     nome_dos_fundos = nome_dos_fundos.with_columns(pl.col(["CNPJ_Classe"]).map_elements(pontua_cnpj))
 
-    fundos_filtrado = classes_dos_fundos.join(nome_dos_fundos, right_on='CNPJ_Classe', left_on='CNPJ_FUNDO', how='inner')
-
+    fundos_filtrado = classes_dos_fundos.join(nome_dos_fundos, right_on='CNPJ_Classe', left_on='CNPJ_FUNDO', how='right')
+    fundos_filtrado = fundos_filtrado.rename({'CNPJ_Classe':'CNPJ_FUNDO'})
     if classe:
         if not isinstance(classe, list):
             classe = [classe]
         check_classes = [x for x in classe if x not in classes_disponiveis]
         if check_classes:
             raise ValueError(f"Classe não encontrada {check_classes}")
-        fundos_filtrado = fundos_filtrado.filter(pl.col('CLASSE').is_in(classe))
+        fundos_filtrado = fundos_filtrado.filter((pl.col('CLASSE').is_in(classe)) | (pl.col('CLASSE').is_null()) |
+                                                 (pl.col('CLASSE')==''))
     if output_format.lower() == 'pandas':
         fundos_filtrado = fundos_filtrado.to_pandas()
     print(f"Cadastro finalizado em {round((time.time()-start)/60,2)} minutos")
@@ -97,7 +98,7 @@ def mesclar_bases(cadastro_fundos: pl.dataframe.frame.DataFrame, informe_diario_
         if 'DT_COMPTC' not in informe_diario_fundos.columns:
             informe_diario_fundos = informe_diario_fundos.reset_index()
         informe_diario_fundos = pl.from_pandas(informe_diario_fundos)
-    dados_completos_filtrados = informe_diario_fundos.join(cadastro_fundos, right_on=["CNPJ_Classe"], left_on=['CNPJ_FUNDO'], how="inner")
+    dados_completos_filtrados = informe_diario_fundos.join(cadastro_fundos, on=['CNPJ_FUNDO'], how="inner")
     dados_completos_filtrados = dados_completos_filtrados.with_columns(((pl.col('CNPJ_FUNDO')) + ' // ' + (pl.col('Denominacao_Social'))).alias('CNPJ - Nome'))
     if output_format.lower() == 'pandas':
         return dados_completos_filtrados.to_pandas().set_index('DT_COMPTC').sort_index()
