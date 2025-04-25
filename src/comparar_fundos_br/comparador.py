@@ -238,7 +238,7 @@ def plotar_evolucao(
 def plotar_rentabilidade_janela_movel(df: pd.DataFrame, HP: int, benchmarks: pd.DataFrame) -> None:
     for fundo in df.columns:
         retorno = calcula_retorno_janelas_moveis(df[[fundo]], HP, benchmarks)
-        
+
         plt.figure(figsize=(15, 6))
         plt.suptitle(f"Retorno de {HP} dias")
         plt.plot(retorno[fundo].multiply(100), lw=2)
@@ -303,7 +303,8 @@ def plotar_comparacao_risco_retorno(
             arrowprops=dict(arrowstyle="->", color="r", connectionstyle="arc3,rad=-0.1"),
         )
 
-def supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int, limit: float = 0.6) -> pd.DataFrame:
+def supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int,
+                     limit: float = 0.6, janela_analise: int = 252) -> pd.DataFrame:
     '''Função que indica a porcentagem de vezes em que o fundo supera o benchmark no periodo selecionado.
     O corte é dado pelo parâmetro limit.'''
     percentuais = pd.DataFrame()
@@ -314,6 +315,7 @@ def supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int, lim
             retorno = calcula_retorno_janelas_moveis(dados[[fundo]], HP, benchmarks[[bench]])
             retorno = retorno.sort_index().dropna()
             if retorno.empty: break
+            elif retorno.shape[0] < janela_analise: continue
             eventos = (retorno[fundo] - retorno[bench])
             percentual_sobre_bench = len(eventos[eventos>0])/len(eventos)
             if percentual_sobre_bench >= limit:
