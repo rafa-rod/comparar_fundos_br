@@ -56,7 +56,7 @@ def get_cadastro_fundos(
     classe: Optional[Union[List[str], str]] = None, 
     proxy: Optional[Dict[str, str]] = None,
     output_format: str = 'pandas') -> Union[pd.DataFrame, pl.dataframe.frame.DataFrame]:
-    '''Busca o cadastro dos fundos em funcionamento normal, dos tipos FI, FIF e FIDC cuja classificação seja não nula
+    '''Busca o cadastro dos fundos em funcionamento normal, dos tipos de classe FIF e FIDC cuja classificação seja não nula
     e busca sua respectiva classe.'''
     classes_disponiveis = get_classes()
     start = time.time()
@@ -65,15 +65,17 @@ def get_cadastro_fundos(
     url2 = "http://dados.cvm.gov.br/dados/FI/CAD/DADOS/registro_fundo_classe.zip"
     resposta2 = _get_response(url2, proxy=proxy)
 
-    arquivo1, arquivo2 = "registro_fundo.csv", "cad_fi_hist_classe.csv"
-    nome_dos_fundos = _ler_zip_files(resposta1, arquivo1)
-    nome_dos_fundos = nome_dos_fundos.filter( (pl.col('Situacao')=="Em Funcionamento Normal") &
-                                              (pl.col('Tipo_Fundo').is_in(['FI','FIDC','FIF'])) &
-                                              (pl.col('Classificacao').is_not_null()) )
-    nome_dos_fundos = nome_dos_fundos.rename({'CNPJ_Fundo':'CNPJ_FUNDO'})
-
-    classes_dos_fundos = _ler_zip_files(resposta2, arquivo2)
+    arquivo1, arquivo2 = "cad_fi_hist_classe.csv", "registro_classe.csv"
+    classes_dos_fundos = _ler_zip_files(resposta1, arquivo1)
     classes_dos_fundos = classes_dos_fundos.filter(pl.col('DT_FIM_CLASSE').is_null()) #classes atuais
+
+    nome_dos_fundos = _ler_zip_files(resposta2, arquivo2)
+    nome_dos_fundos = nome_dos_fundos.filter( (pl.col('Situacao')=="Em Funcionamento Normal") &
+                                              (pl.col('Tipo_Classe').is_in(['Classes de Cotas de Fundos FIF',
+                                                                            'Classes de Cotas de Fundos FIDC'])) &
+                                              (pl.col('Classificacao').is_not_null()) )
+    nome_dos_fundos = nome_dos_fundos.rename({'CNPJ_Classe':'CNPJ_FUNDO'})
+
     fundos_filtrado = nome_dos_fundos.join(classes_dos_fundos, on='CNPJ_FUNDO', how='inner')
 
     if classe:
