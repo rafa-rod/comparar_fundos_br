@@ -62,8 +62,9 @@ def get_cadastro_fundos(
     resposta1 = _get_response(url1, proxy=proxy)
     url2 = "http://dados.cvm.gov.br/dados/FI/CAD/DADOS/registro_fundo_classe.zip"
     resposta2 = _get_response(url2, proxy=proxy)
+    resposta3 = _get_response(url2, proxy=proxy)
 
-    arquivo1, arquivo2 = "cad_fi_hist_classe.csv", "registro_classe.csv"
+    arquivo1, arquivo2, arquivo3 = "cad_fi_hist_classe.csv", "registro_classe.csv", "registro_fundo.csv"
     classes_dos_fundos = _ler_zip_files(resposta1, arquivo1)
     classes_dos_fundos = classes_dos_fundos.filter(pl.col('DT_FIM_CLASSE')!='') #classes atuais
 
@@ -73,8 +74,19 @@ def get_cadastro_fundos(
                                                                             'Classes de Cotas de Fundos FIDC']))  )
     nome_dos_fundos = nome_dos_fundos.with_columns(pl.col(["CNPJ_Classe"]).map_elements(pontua_cnpj))
 
-    fundos_filtrado = classes_dos_fundos.join(nome_dos_fundos, right_on='CNPJ_Classe', left_on='CNPJ_FUNDO', how='right')
-    fundos_filtrado = fundos_filtrado.rename({'CNPJ_Classe':'CNPJ_FUNDO'})
+    fundos_filtrado = classes_dos_fundos.join(nome_dos_fundos, right_on='CNPJ_Classe', left_on='CNPJ_FUNDO', how='outer')
+    fundos_filtrado = fundos_filtrado.with_columns(
+                                        pl.when(pl.col('CNPJ_FUNDO').is_null())
+                                          .then(pl.col('CNPJ_Classe'))
+                                          .otherwise(pl.col('CNPJ_FUNDO'))
+                                          .alias('CNPJ')
+                                            )
+    fundos_filtrado = fundos_filtrado.drop('CNPJ_FUNDO').rename({'CNPJ': 'CNPJ_FUNDO'})
+    mais_info_dos_fundos = _ler_zip_files(resposta3, arquivo3)
+    mais_info_dos_fundos = mais_info_dos_fundos.select(['CNPJ_Fundo', 'Tipo_Fundo', 'Denominacao_Social', 'Situacao', 'Data_Adaptacao_RCVM175'])
+    mais_info_dos_fundos = mais_info_dos_fundos.rename({'CNPJ_Fundo': 'CNPJ_FUNDO'})
+    mais_info_dos_fundos = mais_info_dos_fundos.with_columns(pl.col(["CNPJ_FUNDO"]).map_elements(pontua_cnpj))
+    fundos_filtrado = fundos_filtrado.join(mais_info_dos_fundos, on=['CNPJ_FUNDO', 'Denominacao_Social', 'Situacao'], how='right')
     if classe:
         if not isinstance(classe, list):
             classe = [classe]
