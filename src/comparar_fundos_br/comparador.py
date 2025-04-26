@@ -4,7 +4,7 @@
 """
 from comparar_fundos_br.benchmarks import *
 import warnings
-from typing import Any, List, Tuple, Union, Dict
+from typing import Any, List, Tuple, Union, Optional
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -88,8 +88,16 @@ def calcula_risco_retorno_fundos(
             rentabilidade_acumulada_por_ano
             )
 
-def remove_outliers(df: pd.DataFrame, col: str, q: float = 0.05) -> pd.DataFrame:
+def remove_outliers(df: pd.DataFrame, q: float = 0.05, col: Optional[Union[List[str], str]] = None) -> pd.DataFrame:
+    '''Remove outliers ao informar usando método do range interquartil, ou seja, retira os dados 
+    acima de 1.5*Q3 (1-q) e abaixo de 1.5*Q1 (q), onde q é o quantil.
+    Quanto maior o valor de q, mais dados serão removidos.'''
     df1 = df.copy()
+    if col:
+        if isinstance(col, str):
+            col = [col]
+    else:
+        col = df1.columns.tolist()
     upper = df1[col].quantile(1-q)
     lower = df1[col].quantile(q)
     df2 =  df1[(df1[col] < upper) & (df1[col] > lower)]

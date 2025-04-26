@@ -69,9 +69,6 @@ def get_cadastro_fundos(
     classes_dos_fundos = classes_dos_fundos.filter(pl.col('DT_FIM_CLASSE')!='') #classes atuais
 
     nome_dos_fundos = _ler_zip_files(resposta2, arquivo2)
-    nome_dos_fundos = nome_dos_fundos.filter( (pl.col('Situacao')=="Em Funcionamento Normal") &
-                                              (pl.col('Tipo_Classe').is_in(['Classes de Cotas de Fundos FIF',
-                                                                            'Classes de Cotas de Fundos FIDC']))  )
     nome_dos_fundos = nome_dos_fundos.with_columns(pl.col(["CNPJ_Classe"]).map_elements(pontua_cnpj))
 
     fundos_filtrado = classes_dos_fundos.join(nome_dos_fundos, right_on='CNPJ_Classe', left_on='CNPJ_FUNDO', how='outer')
@@ -87,6 +84,12 @@ def get_cadastro_fundos(
     mais_info_dos_fundos = mais_info_dos_fundos.rename({'CNPJ_Fundo': 'CNPJ_FUNDO'})
     mais_info_dos_fundos = mais_info_dos_fundos.with_columns(pl.col(["CNPJ_FUNDO"]).map_elements(pontua_cnpj))
     fundos_filtrado = fundos_filtrado.join(mais_info_dos_fundos, on=['CNPJ_FUNDO', 'Denominacao_Social', 'Situacao'], how='right')
+    fundos_filtrado = fundos_filtrado.filter( (pl.col('Situacao')=="Em Funcionamento Normal") &
+                                              (pl.col('Tipo_Fundo').is_in(['FIDC', 'FI', 'FIF']) )).drop(['CNPJ_Classe',
+                                                                                                        'DT_INI_CLASSE',
+                                                                                                        'DT_FIM_CLASSE',
+                                                                                                        'ID_Registro_Fundo',
+                                                                                                        'ID_Registro_Classe'])
     if classe:
         if not isinstance(classe, list):
             classe = [classe]
