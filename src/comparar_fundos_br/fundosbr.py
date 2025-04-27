@@ -86,6 +86,7 @@ def get_cadastro_fundos(
     fundos_filtrado = fundos_filtrado.join(mais_info_dos_fundos, on=['CNPJ_FUNDO', 'Denominacao_Social', 'Situacao'], how='right')
     fundos_filtrado = fundos_filtrado.filter( (pl.col('Situacao')=="Em Funcionamento Normal") &
                                               (pl.col('Tipo_Fundo').is_in(['FIDC', 'FI', 'FIF']) )).drop(['CNPJ_Classe',
+                                                                                                          'DT_REG',
                                                                                                         'DT_INI_CLASSE',
                                                                                                         'DT_FIM_CLASSE',
                                                                                                         'ID_Registro_Fundo',
@@ -98,6 +99,7 @@ def get_cadastro_fundos(
             raise ValueError(f"Classe não encontrada {check_classes}")
         fundos_filtrado = fundos_filtrado.filter((pl.col('CLASSE').is_in(classe)) | (pl.col('CLASSE').is_null()) |
                                                  (pl.col('CLASSE')==''))
+    fundos_filtrado = fundos_filtrado.with_columns(pl.col('Denominacao_Social').str.to_uppercase())
     if output_format.lower() == 'pandas':
         fundos_filtrado = fundos_filtrado.to_pandas()
     print(f"Cadastro finalizado em {round((time.time()-start)/60,2)} minutos")

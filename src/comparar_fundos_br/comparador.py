@@ -88,16 +88,12 @@ def calcula_risco_retorno_fundos(
             rentabilidade_acumulada_por_ano
             )
 
-def remove_outliers(df: pd.DataFrame, q: float = 0.05, col: Optional[Union[List[str], str]] = None) -> pd.DataFrame:
+def remove_outliers(df: pd.DataFrame, q: float = 0.05) -> pd.DataFrame:
     '''Remove outliers ao informar usando método do range interquartil, ou seja, retira os dados 
     acima de 1.5*Q3 (1-q) e abaixo de 1.5*Q1 (q), onde q é o quantil.
     Quanto maior o valor de q, mais dados serão removidos.'''
     df1 = df.copy()
-    if col:
-        if isinstance(col, str):
-            col = [col]
-    else:
-        col = df1.columns.tolist()
+    col = df1.columns.tolist()
     upper = df1[col].quantile(1-q)
     lower = df1[col].quantile(q)
     df2 =  df1[(df1[col] < upper) & (df1[col] > lower)]
@@ -332,27 +328,37 @@ def supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int,
         percentuais = pd.concat([percentuais, df1], axis=0)
     return percentuais[(percentuais>=limit*100)].dropna().sort_values(percentuais.columns.tolist(), ascending=False)
 
-def qto_supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int) -> pd.DataFrame:
+def qto_supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int, corte_bench: float=100, bench_corte='CDI') -> pd.DataFrame:
     '''Enquanto a função *supera_benchmark* indica se um fundo supera o benchmark.
-    Essa função exibe o quanto os fundos superaram o benchmark, em média. E também o quanto eles 
-    ficam abaixo do benchmark, em média'''
+    Essa função exibe quantas vezes os fundos superaram o benchmark, em média, e o quanto eles 
+    ficam abaixo do benchmark, em média.
+    Os fundos são ranqueados por % do benchmark. O parâmetro corte_bench filtra os fundos que performam,
+    pelo menos, o mesmo que o fundo.'''
     percentuais = pd.DataFrame()
     lista_benchmarks = [x for x in benchmarks.columns if 'Retorno' not in x]
     for i, fundo in enumerate(tqdm(dados.columns.tolist())):
         df1 = pd.DataFrame()
         for bench in lista_benchmarks:
-            retorno = calcula_retorno_janelas_moveis(dados[[fundo]], HP, benchmarks[[bench]])
+            retorno = comp.calcula_retorno_janelas_moveis(dados[[fundo]], HP, benchmarks[[bench]])
             retorno = retorno.sort_index().dropna()
             if retorno.empty: break
             eventos = (retorno[fundo] - retorno[bench])
             media_sup = eventos[eventos>=0].mean()
             media_inf = eventos[eventos<0].mean()
-            df = pd.DataFrame([fundo, media_sup, media_inf], index=["Fundo", f"Media Acima {bench} (%)",
-                                                                   f"Media Abaixo {bench} (%)"]).T.set_index("Fundo")
+            em_rel_cdi = (retorno[fundo]/retorno[bench]).mean()
+            df = pd.DataFrame([fundo, media_sup, media_inf, em_rel_cdi], index=["Fundo", f"% de vezes, em média, acima {bench} (%)",
+                                                                        f"% de vezes, em média, abaixo {bench} (%)",
+                                                                        f'% do {bench}, em média']).T.set_index("Fundo")
             df1 = pd.concat([df1, df], axis=1)
         percentuais = pd.concat([percentuais, df1], axis=0)
-    cols1 = [x for x in percentuais.columns if "Acima" in x]
-    return (percentuais.sort_values(cols1, ascending=False)*100).fillna(0)
+    cols1 = [x for x in percentuais.columns if 'acima' not in x and 'abaixo' not in x]
+    percentuais = (percentuais.sort_values(cols1, ascending=False)*100).fillna(0)
+    if not bench_corte:
+        for bench in lista_benchmarks:
+            percentuais = percentuais[percentuais[f'% do {bench}, em média']>=corte_bench]
+    else:
+        percentuais = percentuais[percentuais[f'% do {bench_corte}, em média']>=corte_bench]
+    return percentuais
 
 def _repetir_elemento(seq):
     return cycle(seq)

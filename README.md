@@ -145,7 +145,7 @@ comp.plotar_comparacao_risco_retorno(
                                 posicao_texto_carteira=(30, 25),
                                 posicao_texto_benchmark=(31, -25),
                                 )
-plt.title("Risco x Retorno - Fundos de Ações")
+plt.suptitle("Risco x Retorno - Fundos de Ações")
 plt.ylim(-10, 140)
 plt.xlim(-3, 60)
 plt.show()
@@ -291,19 +291,22 @@ fundos_selecionados_por_corte
 ```
 Repare que apenas 3 fundos superaram seus benchmarks, exceto SP500, mais que 60% das vezes em janela móvel de 3 anos.
 
-Complementando, a análise acima, veja o quanto esses fundos ultrapassaram, em média, seus benchmarks e também quanto, em média, ficaram abaixo dos benchmarks:
+Complementando, a análise acima, veja quantas vezes esses fundos ultrapassaram, em média, seus benchmarks e também quanto, em média, ficaram abaixo dos benchmarks. Além disso, exibe quanto o fundo superou, em média, seu benchmark no período.
 
 ```python
+corte_benchmark = 100
+bench_corte = 'CDI'
+janela_movel = 3*252 #3 anos
 indice_superacao = comp.qto_supera_benchmark(serie_temporal_fundos[fundos_selecionados_por_corte.index.tolist()],
-                                             df_benchmarks[['IBOV', 'CDI']], 3*252)
+                                             df_benchmarks[['IBOV', 'CDI']], janela_movel, corte_benchmark, bench_corte)
 indice_superacao
 ```
 ```
-| Fundo                                                                                                                   |   Media Acima IBOV (%) |   Media Abaixo IBOV (%) |   Media Acima CDI (%) |   Media Abaixo CDI (%) |
-|-------------------------------------------------------------------------------------------------------------------------|------------------------|-------------------------|-----------------------|------------------------|
-| 00.977.449/0001-04 // BNP PARIBAS GERDAU PREVIDÊNCIA 1 CLASSE DE INVESTIMENTO RENDA FIXA CREDITO PRIVADO RESP LIMITADA  |                35.1578 |                -33.5267 |               2.10514 |              -0.822388 |
-| 03.545.843/0001-61 // CARGILLPREV CD PREVIDENCIÁRIO MULTIMERCADO CRÉDITO PRIVADO - FUNDO DE INVESTIMENTO                |                34.4475 |                -33.8336 |               1.63382 |              -0.470723 |
-| 08.418.132/0001-40 // ITAU FLEXPREV VÉRTICE PRÉ FUNDO DE INVESTIMENTO FINANCEIRO RENDA FIXA - RESPONSABILIDADE LIMITADA |                33.008  |                -23.7353 |              10.0789  |              -7.12265  |
+| Fundo                                                                                                                   |   % de vezes, em média, acima IBOV (%) |   % de vezes, em média, abaixo IBOV (%) |   % do IBOV, em média |   % de vezes, em média, acima CDI (%) |   % de vezes, em média, abaixo CDI (%) |   % do CDI, em média |
+|-------------------------------------------------------------------------------------------------------------------------|----------------------------------------|-----------------------------------------|-----------------------|---------------------------------------|----------------------------------------|----------------------|
+| 00.977.449/0001-04 // BNP PARIBAS GERDAU PREVIDÊNCIA 1 CLASSE DE INVESTIMENTO RENDA FIXA CREDITO PRIVADO RESP LIMITADA  |                                35.1578 |                                -33.5267 |              55.9516  |                               2.10514 |                              -0.822388 |              107.204 |
+| 08.418.132/0001-40 // ITAU FLEXPREV VÉRTICE PRÉ FUNDO DE INVESTIMENTO FINANCEIRO RENDA FIXA - RESPONSABILIDADE LIMITADA |                                33.008  |                                -23.7353 |              30.8463  |                              10.0789  |                              -7.12265  |              118.918 |
+| 03.545.843/0001-61 // CARGILLPREV CD PREVIDENCIÁRIO MULTIMERCADO CRÉDITO PRIVADO - FUNDO DE INVESTIMENTO                |                                34.4475 |                                -33.8336 |               5.45296 |                               1.63382 |                              -0.470723 |              104.487 |
 ```
 
 Para Fundos de Participação (FIPs) e Fundos de Direitos Creditórios (FIDCs), a sistemática é diferente. Enquanto os FIPs tem seus resultados divulgados trimestralmente, os FIDCs são mensalmente divulgados. Assim, para obte-los, basta codar:
