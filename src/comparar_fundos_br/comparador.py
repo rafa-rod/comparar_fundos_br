@@ -339,7 +339,7 @@ def qto_supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int,
     for i, fundo in enumerate(tqdm(dados.columns.tolist())):
         df1 = pd.DataFrame()
         for bench in lista_benchmarks:
-            retorno = comp.calcula_retorno_janelas_moveis(dados[[fundo]], HP, benchmarks[[bench]])
+            retorno = calcula_retorno_janelas_moveis(dados[[fundo]], HP, benchmarks[[bench]])
             retorno = retorno.sort_index().dropna()
             if retorno.empty: break
             eventos = (retorno[fundo] - retorno[bench])
