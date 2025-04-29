@@ -140,6 +140,9 @@ def get_benchmarks(data_inicio: str, data_fim: str, benchmark: str = "CDI", meto
         elif benchmark.upper()=="SP500":
             df_benchmark = yf.download("^GSPC", start=data_inicio, end=data_fim, interval="1d", proxy=proxy)["Close"]
             df_benchmark.columns = ["SP500"]
+        elif benchmark.upper()=="USD":
+            df_benchmark = yf.download("BRL=X", start=data_inicio, end=data_fim, interval="1d", proxy=proxy)["Close"]
+            df_benchmark.columns = ["USD"]
         else:
             df_benchmark = get_indices_anbima(data_inicio, data_fim, benchmark)
         df_benchmark[f'Retorno {benchmark.upper()}'] = df_benchmark[benchmark.upper()].pct_change()
