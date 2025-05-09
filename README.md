@@ -252,7 +252,7 @@ No exemplo acima, um fundo foi sorteado aleatoriamente; mas você pode ter outro
 Outra forma de avaliação é uma visão mais geral em períodos específicos padronizados como: mensal (M), trimestral (Q), semestral (sem) ou anual (Y) destacando as cores do retornos mais positivos e negativos. Basta informar os retornos diários e selecionar o período:
 
 ```python
-comp.plotar_heatmap_rentabilidade(rentabilidade_fundos_diaria[seleciona_um_fundo_aleatoriamente], period='M')
+comp.plotar_heatmap_rentabilidade(serie_temporal_fundos[seleciona_um_fundo_aleatoriamente], period='M')
 ```
 
 <center>
@@ -263,7 +263,7 @@ style="width:100%;"/>
 De forma complementar ao gráfico *heatmap* anterior, pode ser exibido uma figura que compara os retornos do período com seu benchmark. A última coluna *Ultrapassa Retorno CDI* (CDI escolhido no exemplo) representa o número de vezes que o fundo ultrapassou o benchmark sobre o total de períodos (se mensal, doze periodos).
 
 ```python
-comp.plotar_heatmap_comparar_benchmark(rentabilidade_fundos_diaria[seleciona_um_fundo_aleatoriamente],
+comp.plotar_heatmap_comparar_benchmark(serie_temporal_fundos[seleciona_um_fundo_aleatoriamente],
                                           df_benchmarks[['Retorno CDI']],
                                           "M")
 ```
@@ -316,11 +316,12 @@ Para Fundos de Participação (FIPs) e Fundos de Direitos Creditórios (FIDCs), 
 fip = comp.get_fip(2022)
 
 #Para FIDCs informe ano e mês
+from tqdm import tqdm
+
 informe_fidcs_all = pd.DataFrame()
 for ano in [2020, 2021]:
-    for mes in range(1, 13):
-        print(f"Data {mes}/{ano}")
-        informe_fidcs = comp.get_fidc(ano, mes)
+   for mes in tqdm(range(1, 13)):
+        informe_fidcs = comp.get_fidc(ano, mes, tabela = 'X', subtabela = 3, proxy=None)
         if not informe_fidcs.empty:
             informe_fidcs_all = pd.concat([informe_fidcs_all, informe_fidcs])
 ```
