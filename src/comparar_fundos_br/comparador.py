@@ -376,26 +376,26 @@ def _traduz_frequencia(frequencia: str) -> List[str]:
         freq = [frequencia]
     return freq
 
-def _calcula_rentabilidade_periodo(rentabilidade_diaria: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
+def calcula_rentabilidade_periodo(dados_diarios: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
     if freq.lower()=="sem":
         freq = "Q"
-        inicio = rentabilidade_diaria.resample(f"{freq}S").first()
-        fim = rentabilidade_diaria.resample(f"{freq}E").last()
+        inicio = dados_diarios.resample(f"{freq}S").first()
+        fim = dados_diarios.resample(f"{freq}E").last()
         inicio = inicio[inicio.index.month.isin([1,7])]
         fim = fim[fim.index.month.isin([6,12])]
     else:
-        inicio = rentabilidade_diaria.resample(f"{freq}S").first()
-        fim = rentabilidade_diaria.resample(f"{freq}E").last()
+        inicio = dados_diarios.resample(f"{freq}S").first()
+        fim = dados_diarios.resample(f"{freq}E").last()
     rentabilidade_periodo_total = pd.DataFrame()
     for (init, end) in zip(inicio.index, fim.index):
-        df = rentabilidade_diaria[(rentabilidade_diaria.index>=init) & (rentabilidade_diaria.index<=end)].fillna(0)
+        df = dados_diarios[(dados_diarios.index>=init) & (dados_diarios.index<=end)].ffill().pct_change()
         rentabilidade_periodo = ((1 + df).cumprod() - 1).tail(1)
         rentabilidade_periodo.index = [end]
         rentabilidade_periodo_total = pd.concat([rentabilidade_periodo_total, rentabilidade_periodo])
     return rentabilidade_periodo_total.asfreq(f"{freq}E")
 
-def _retorno_heatmap(retorno_diario: pd.DataFrame, period: str, nome: str) -> Union[pd.DataFrame, List[str]]:
-    returns = _calcula_rentabilidade_periodo(retorno_diario, period.upper())*100
+def _retorno_heatmap(dados_diarios: pd.DataFrame, period: str, nome: str) -> Union[pd.DataFrame, List[str]]:
+    returns = calcula_rentabilidade_periodo(dados_diarios, period.upper())*100
     frequencia = period if period=='sem' else str(returns.index.freq).replace('<','').replace('>','')
     freq = _traduz_frequencia(frequencia)
     f = _repetir_elemento(list(range(1, returns.index.month[:-1].nunique()+1)))
@@ -406,7 +406,7 @@ def _retorno_heatmap(retorno_diario: pd.DataFrame, period: str, nome: str) -> Un
     returns = returns.pivot_table(index=f"{freq[0]}", columns="Ano", values=nome, aggfunc="last").fillna(0).T
     return returns, freq
 
-def plotar_heatmap_rentabilidade(retorno_diario: pd.DataFrame, period: str = 'M') -> None:
+def plotar_heatmap_rentabilidade(dados_diarios: pd.DataFrame, period: str = 'M') -> None:
     '''Função que plota gráfico tipo heatmap que exibe o desempenho do fundo ou do benchmark no periodo indicado, que pode ser:
     -mensal (M), 
     -trimestral (Q), 
@@ -417,8 +417,8 @@ def plotar_heatmap_rentabilidade(retorno_diario: pd.DataFrame, period: str = 'M'
     cmap = LinearSegmentedColormap.from_list(name='t',
         colors=["red", "white", 'green']
     )
-    nome = retorno_diario.columns[0]
-    returns, freq = _retorno_heatmap(retorno_diario, period, nome)
+    nome = dados_diarios.columns[0]
+    returns, freq = _retorno_heatmap(dados_diarios, period, nome)
 
     grayscale=False
     ylabel=True
@@ -477,8 +477,8 @@ def plotar_heatmap_rentabilidade(retorno_diario: pd.DataFrame, period: str = 'M'
     plt.show(block=False)
     plt.close()
 
-def plotar_heatmap_comparar_benchmark(rentabilidade_diaria_fundos: pd.DataFrame,
-                                      rentabilidade_diaria_benchmarks: pd.DataFrame,
+def plotar_heatmap_comparar_benchmark(dados_diarios_fundos: pd.DataFrame,
+                                      dados_diarios_benchmarks: pd.DataFrame,
                                       period: str = "M") -> None:
     '''Função que exibe gráfico heatmap para facilitar a comparação de desempenho de um fundo com seu benchmark.
     O gráfico uma coluna Ultrapassa Benchmark onde indica, em %, quanto o fundo superou o benchmark no periodo (period), que pode ser:
@@ -489,10 +489,10 @@ def plotar_heatmap_comparar_benchmark(rentabilidade_diaria_fundos: pd.DataFrame,
     superou = 100 * num_vezes_que_superou_no_periodo/total_de_periodos
     As cores do gráfico auxiliam na indicação dos periodos em que houve superação.
     '''
-    bench = rentabilidade_diaria_benchmarks.columns[0]
-    nome = rentabilidade_diaria_fundos.columns[0]
-    returns1, freq = _retorno_heatmap(rentabilidade_diaria_fundos, period, nome)
-    returns2, freq2 = _retorno_heatmap(rentabilidade_diaria_benchmarks, period, bench)
+    bench = dados_diarios_benchmarks.columns[0]
+    nome = dados_diarios_fundos.columns[0]
+    returns1, freq = _retorno_heatmap(dados_diarios_fundos, period, nome)
+    returns2, freq2 = _retorno_heatmap(dados_diarios_benchmarks, period, bench)
     
     df4 = returns1 - returns2
     df4['nao_superou'] = (df4 < 0).sum(axis=1)

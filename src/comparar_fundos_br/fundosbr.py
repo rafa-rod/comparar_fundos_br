@@ -203,8 +203,17 @@ def get_fip(ano: int,
     return pd.DataFrame(lines[1:], columns=lines[0])
 
 def get_fidc(ano: int, 
-             mes: int, proxy: 
-             Union[Dict[str, str], None] = None) -> pd.DataFrame:
+             mes: int,
+             tabela: str = 'X',
+             subtabela: int = 3,
+             proxy: Union[Dict[str, str], None] = None) -> pd.DataFrame:
+    '''Função que busca dados de Fundos Estruturados - FIDC do FUNDOS.NET da CVM 
+    que se enquadram na instrução 175 da CVM, exemplo:
+    https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo=11701985000107
+    Outros fundos de crédito, até mesmo com FIDC no nome, podem estar nos informes diários.
+    A tabela I exibe dados gerais do fundo, enquanto a tabela X subtabela 3 indica a rentabilidade mensal.
+    Para demais tabelas, consultar site da CVM.
+    '''
     start = time.time()
     url = "http://dados.cvm.gov.br/dados/FIDC/DOC/INF_MENSAL/DADOS/inf_mensal_fidc_{:02d}{:02d}.zip".format(ano, mes)
     if proxy:
@@ -216,7 +225,10 @@ def get_fidc(ano: int,
         dados_cvm = requests.get(url)
     if str(dados_cvm) == '<Response [404]>':
         raise ValueError("Não há dados para esta data. Response [404]")
-    arquivo = "inf_mensal_fidc_tab_X_2_{:02d}{:02d}.csv".format(ano, mes)
+    if tabela.upper()=='X':
+        arquivo = f"inf_mensal_fidc_tab_{tabela}_{subtabela}_{ano:02d}{mes:02d}.csv"
+    else:
+        arquivo = f"inf_mensal_fidc_tab_{tabela}_{ano:02d}{mes:02d}.csv"
     zf = zipfile.ZipFile(io.BytesIO(dados_cvm.content))
     zf = zf.open(arquivo)
     lines = zf.readlines()

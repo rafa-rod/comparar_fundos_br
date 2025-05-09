@@ -26,6 +26,8 @@ pyettj = [
 ]
 polars = "^1.27.1"
 fastexcel = "^0.13.0"
+pyarrow = "19.0.1"
+yfinance = "0.2.59"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

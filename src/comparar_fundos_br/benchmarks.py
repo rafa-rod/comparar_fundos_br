@@ -128,20 +128,21 @@ def get_benchmarks(data_inicio: str, data_fim: str, benchmark: str = "CDI", meto
     -IHFA (ihfa).
     As datas devem ser no formato string '2025-01-02', ou seja, 'ANO-MES-DIA'.
     A saída gera o retorno diário e o acumulado.'''
+    if proxy: yf.set_config(proxy=proxy)
     if benchmark.upper()=="CDI":
         df_benchmark = get_cdi(data_inicio, data_fim, metodo_cdi, proxy)
     else:
         if benchmark.upper()=="IBOV":
-            df_benchmark = yf.download("^BVSP", start=data_inicio, end=data_fim, interval="1d", proxy=proxy)["Close"]
+            df_benchmark = yf.download("^BVSP", start=data_inicio, end=data_fim, interval="1d", auto_adjust=True)["Close"]
             df_benchmark.columns = ["IBOV"]
         elif benchmark.upper()=="DIVO11":
-            df_benchmark = yf.download("DIVO11.SA", start=data_inicio, end=data_fim, interval="1d", proxy=proxy)["Close"]
+            df_benchmark = yf.download("DIVO11.SA", start=data_inicio, end=data_fim, interval="1d", auto_adjust=True)["Close"]
             df_benchmark.columns = ["DIVO11"]
         elif benchmark.upper()=="SP500":
-            df_benchmark = yf.download("^GSPC", start=data_inicio, end=data_fim, interval="1d", proxy=proxy)["Close"]
+            df_benchmark = yf.download("^GSPC", start=data_inicio, end=data_fim, interval="1d", auto_adjust=True)["Close"]
             df_benchmark.columns = ["SP500"]
         elif benchmark.upper()=="USD":
-            df_benchmark = yf.download("BRL=X", start=data_inicio, end=data_fim, interval="1d", proxy=proxy)["Close"]
+            df_benchmark = yf.download("BRL=X", start=data_inicio, end=data_fim, interval="1d", auto_adjust=True)["Close"]
             df_benchmark.columns = ["USD"]
         else:
             df_benchmark = get_indices_anbima(data_inicio, data_fim, benchmark)
@@ -157,19 +158,20 @@ def get_stocks(
                 ) -> pd.DataFrame:
     """Função para capturar dados de Ações ou Índices Listados.
     """
+    if proxy: yf.set_config(proxy=proxy)
     df1 = pd.DataFrame()
     if isinstance(acoes, list):
         for st in acoes:
             if not st.endswith(".SA"): st = st+".SA"
             if proxy:
-                df = yf.download(st, start=data_inicio, end=data_fim, proxy=proxy)['Close']
+                df = yf.download(st, start=data_inicio, end=data_fim, auto_adjust=True)['Close']
             else:
                 df = yf.download(st, start=data_inicio, end=data_fim)['Close']
             df1 = pd.concat([df, df1], axis=1)
     else:
         if not acoes.endswith(".SA"): acoes = acoes+".SA"
         if proxy:
-            df1 = yf.download(acoes, start=data_inicio, end=data_fim, proxy=proxy)['Close']
+            df1 = yf.download(acoes, start=data_inicio, end=data_fim, auto_adjust=True)['Close']
         else:
             df1 = yf.download(acoes, start=data_inicio, end=data_fim)['Close']
     df1.index = pd.to_datetime(df1.index)
