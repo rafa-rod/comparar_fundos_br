@@ -398,11 +398,9 @@ def _retorno_heatmap(dados_diarios: pd.DataFrame, period: str, nome: str) -> Uni
     returns = calcula_rentabilidade_periodo(dados_diarios, period.upper())*100
     frequencia = period if period=='sem' else str(returns.index.freq).replace('<','').replace('>','')
     freq = _traduz_frequencia(frequencia)
-    f = _repetir_elemento(list(range(1, returns.index.month[:-1].nunique()+1)))
-    lista_repeticao = [next(f) for x in range(returns.shape[0])]
     
     returns["Ano"] = returns.index.year
-    returns[f"{freq[0]}"] = lista_repeticao
+    returns[f"{freq[0]}"] = returns.index.month
     returns = returns.pivot_table(index=f"{freq[0]}", columns="Ano", values=nome, aggfunc="last").fillna(0).T
     return returns, freq
 
