@@ -8,7 +8,6 @@ from typing import Any, List, Tuple, Union, Optional
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
-from itertools import cycle
 
 warnings.filterwarnings("ignore")
 
@@ -360,9 +359,6 @@ def qto_supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int,
         percentuais = percentuais[percentuais[f'% do {bench_corte}, em média']>=corte_bench]
     return percentuais
 
-def _repetir_elemento(seq):
-    return cycle(seq)
-
 def _traduz_frequencia(frequencia: str) -> List[str]:
     if 'month' in frequencia.lower().split(' ')[0]:
         freq = ["Meses", "Mensais"]
@@ -479,7 +475,8 @@ def plotar_heatmap_comparar_benchmark(dados_diarios_fundos: pd.DataFrame,
                                       dados_diarios_benchmarks: pd.DataFrame,
                                       period: str = "M") -> None:
     '''Função que exibe gráfico heatmap para facilitar a comparação de desempenho de um fundo com seu benchmark.
-    O gráfico uma coluna Ultrapassa Benchmark onde indica, em %, quanto o fundo superou o benchmark no periodo (period), que pode ser:
+    Os valores correspondem ao alpha ou excesso de retorno sobre o benchmark.
+    A última coluna 'Ultrapassa Benchmark' indica, em %, quanto o fundo superou o benchmark no periodo (period), que pode ser:
     -mensal (M), 
     -trimestral (Q), 
     -semestral (sem) ou 
@@ -496,13 +493,13 @@ def plotar_heatmap_comparar_benchmark(dados_diarios_fundos: pd.DataFrame,
     df4['nao_superou'] = (df4 < 0).sum(axis=1)
     df4['superou'] = (df4[[df4.columns[0]]] > 0).sum(axis=1)
     df4[f'Ultrapassa {bench}'] = np.where(df4['superou']>0, 100*(df4['superou']/(df4['superou']+df4['nao_superou'])), 0)
+    df4.drop(['nao_superou', 'superou'], axis=1, inplace=True)
     
-    df = pd.concat([returns1, df4[f'Ultrapassa {bench}']], axis=1)
-    colors = ["darkred", "red", 'lightcoral', "lightpink", "pink",  "lightgreen", 'limegreen','forestgreen', "darkgreen"]
+    colors = ["red", 'white', 'green']
     cmap_gradient = LinearSegmentedColormap.from_list("cmap", colors)
 
-    last_column = df.iloc[:, -1]
-    norm = plt.Normalize(last_column.min(), last_column.max())
+    last_column = df4.iloc[:, -1]
+    norm = plt.Normalize(0, 100)
     row_colors = cmap_gradient(norm(last_column))
 
     ylabel = True
@@ -520,7 +517,7 @@ def plotar_heatmap_comparar_benchmark(dados_diarios_fundos: pd.DataFrame,
     ax.set_facecolor("white")
 
     ax.set_title(
-        f"Retornos {freq[1]} (%) - {nome.title()}\n",
+        f"Alpha {freq[1]} (%) - {nome.title()}\n",
         fontsize=14,
         y=1.04,
         fontname=fontname,
@@ -529,12 +526,12 @@ def plotar_heatmap_comparar_benchmark(dados_diarios_fundos: pd.DataFrame,
     )
 
     heatmap = sns.heatmap(
-        df,
+        df4[df4.columns[:-1]],
         ax=ax,
         annot=False,  # Anotar os valores nas células
         fmt=".2f",  # Formato dos números anotados
         cmap=cmap_gradient,  # Usar o colormap personalizado
-        cbar=True,  # Adicionar barra de cores lateral
+        cbar=False,  # Adicionar barra de cores lateral
         linewidths=1.5,  # Espaçamento entre as células
         linecolor="gray",  # Cor das bordas das células
         cbar_kws={"format": "%.0f%%"}, #"ticks": [-100, -50, 0, 50, 100]},
@@ -549,45 +546,45 @@ def plotar_heatmap_comparar_benchmark(dados_diarios_fundos: pd.DataFrame,
         return "white" if luminance < 0.5 else "black"
     
     # Ajustar as anotações para incluir '%'
-    for i in range(df.shape[0]):
-        for j in range(df.shape[1]):
-            value = df.iloc[i, j]
+    for i in range(df4.shape[0]):
+        for j in range(df4.shape[1]):
+            value = df4.iloc[i, j]
             text = f"{value:.2f}%"  # Adicionar o símbolo '%'
-            cell_color = cmap_gradient(norm(df.iloc[i, -1]))
+            cell_color = cmap_gradient(norm(df4.iloc[i, -1]))
             text_color = get_text_color(cell_color)
             heatmap.text(
-                j + 0.58,  # Posição x (coluna atual)
+                j + 0.5,  # Posição x (coluna atual)
                 i + 0.5,  # Posição y (linha atual)
                 text,  # Valor formatado
                 ha="center",  # Alinhamento horizontal
                 va="center",  # Alinhamento vertical
-                color=text_color,
-                #color="black" if j == df.shape[1] - 1 else "darkslategray",  # Cor do texto
+                color='darkblue' if j == df4.shape[1] - 1 else text_color,
                 fontsize=annot_size,  # Tamanho da fonte
-                weight="bold" if j == df.shape[1] - 1 else "normal",  # Negrito na última coluna
+                weight="bold" if j == df4.shape[1] - 1 else "normal",  # Negrito na última coluna
             )
 
     for i, color in enumerate(row_colors):
-        plt.gca().add_patch(plt.Rectangle((0, i), df.shape[1], 1, fill=True, color=color, lw=0))
+        plt.gca().add_patch(plt.Rectangle((0, i), df4.shape[1], 1, fill=True, color=color, lw=0))
     
-    for i in range(df.shape[0] + 1):
+    for i in range(df4.shape[0] + 1):
         plt.axhline(i, color="white", linewidth=.5, linestyle="-")
-    for j in range(df.shape[1] + 1):
+    for j in range(df4.shape[1] + 1):
         plt.axvline(j, color="white", linewidth=.5, linestyle="-")
 
-    ax.set_xticks(np.arange(df.shape[1]-1)+0.45)
-    ax.set_xticklabels(df.columns[:-1], rotation=0, fontsize=annot_size * 1.2)
+    ax.set_xticks(np.arange(df4.shape[1]-1)+0.45)
+    ax.set_xticklabels(df4[df4.columns[:-1]].columns, rotation=0, fontsize=annot_size * 1.2)
     ax.tick_params(axis="x", which="major", pad=5)  # Aumentar o espaçamento da última coluna
 
+    #texto "Ultrapassa Benckmark"
     ax.text(
-        df.shape[1] - 0.5,  # Posição x (última coluna)
-        -.6,  # Posição y (acima do heatmap)
-        df.columns[-1],  # Texto do rótulo
+        df4.shape[1] - 0.5,  # Posição x (última coluna)
+        df4.shape[0] - df4.shape[0] - 0.12,  # Posição y (acima do heatmap)
+        df4.columns[-1],  # Texto do rótulo
         ha="center",  # Alinhamento horizontal
         va="center",  # Alinhamento vertical
         fontsize=11,  # Tamanho da fonte
         fontweight="bold",  # Negrito
-        color="black",  # Cor do texto
+        color="darkblue",  # Cor do texto
     )
 
     if ylabel:
