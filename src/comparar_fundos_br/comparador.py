@@ -489,9 +489,9 @@ def plotar_heatmap_comparar_benchmark(dados_diarios_fundos: pd.DataFrame,
     returns1, freq = _retorno_heatmap(dados_diarios_fundos, period, nome)
     returns2, freq2 = _retorno_heatmap(dados_diarios_benchmarks, period, bench)
     
-    df4 = returns1 - returns2
+    df4 = (returns1 - returns2).fillna(0)
     df4['nao_superou'] = (df4 < 0).sum(axis=1)
-    df4['superou'] = (df4[[df4.columns[0]]] > 0).sum(axis=1)
+    df4['superou'] = (df4[df4.columns[:-1]] > 0).sum(axis=1)
     df4[f'Ultrapassa {bench}'] = np.where(df4['superou']>0, 100*(df4['superou']/(df4['superou']+df4['nao_superou'])), 0)
     df4.drop(['nao_superou', 'superou'], axis=1, inplace=True)
     

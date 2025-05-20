@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "comparar_fundos_br"
-version = "0.2.1"
+version = "0.2.2"
 description = "Obter dados de fundos de investimento"
 authors = ["Rafael Rodrigues <rafael.rafarod@gmail.com>"]
 readme = "README.md"
