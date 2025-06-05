@@ -342,11 +342,11 @@ def qto_supera_benchmark(dados: pd.DataFrame, benchmarks: pd.DataFrame, HP: int,
             retorno = retorno.sort_index().dropna()
             if retorno.empty: break
             eventos = (retorno[fundo] - retorno[bench])
-            media_sup = eventos[eventos>=0].mean()
-            media_inf = eventos[eventos<0].mean()
-            em_rel_cdi = (retorno[fundo]/retorno[bench]).mean()
-            df = pd.DataFrame([fundo, media_sup, media_inf, em_rel_cdi], index=["Fundo", f"% de vezes, em média, acima {bench} (%)",
-                                                                        f"% de vezes, em média, abaixo {bench} (%)",
+            eventos_sup = len(eventos[eventos>0])/len(eventos)
+            eventos_inf = len(eventos[eventos<=0])/len(eventos)
+            em_rel_cdi = retorno[fundo].mean()/retorno[bench].mean()
+            df = pd.DataFrame([fundo, eventos_sup, eventos_inf, em_rel_cdi], index=["Fundo", f"% de vezes acima {bench} (%)",
+                                                                        f"% de vezes abaixo {bench} (%)",
                                                                         f'% do {bench}, em média']).T.set_index("Fundo")
             df1 = pd.concat([df1, df], axis=1)
         percentuais = pd.concat([percentuais, df1], axis=0)

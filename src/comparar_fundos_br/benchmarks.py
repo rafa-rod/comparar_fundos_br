@@ -5,7 +5,8 @@
 import io
 import warnings
 from typing import Dict, List, Tuple, Union, Optional
-
+import requests
+from io import BytesIO
 import pandas as pd
 import polars as pl
 import requests
@@ -77,10 +78,12 @@ def get_cdi(inicio: str, fim: str, metodo_cdi: str ='bacen',  proxies: Optional[
         raise ValueError("Método não permitido")
     return cdi
 
-def get_indices_anbima(data_inicio: str, data_fim: str, benchmark: str = "imas") -> pd.DataFrame:
+def get_indices_anbima(data_inicio: str, data_fim: str, benchmark: str = "imas",
+                       proxy: Optional[Dict[str, str]] = None) -> pd.DataFrame:
     '''Função que provê o retorno de alguns indices ANBIMA usada como referência, especialmente para Renda Fixa.
     Esta função implementa os seguintes índices: 
     -IMA-S (imas);
+    -IMA-B (imab);
     -IMA-B5 (imab5);
     -IMA-B5+ (imab5+)
     -IMA-B5 P2 (imab5p2);
@@ -89,29 +92,32 @@ def get_indices_anbima(data_inicio: str, data_fim: str, benchmark: str = "imas")
     -IHFA (ihfa).
     As datas devem ser no formato string '2025-01-02', ou seja, 'ANO-MES-DIA'.
     Mais informações em https://data.anbima.com.br/indices'''
+    def check_proxy(url, proxy):
+        response = requests.get(url, proxies=proxy, stream=True)
+        response.raise_for_status()
+        file_like_object = BytesIO(response.content)
+        return file_like_object
     if benchmark.lower()=="imas":
-        indice = pl.read_excel('https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAS-HISTORICO.xls',
-                             engine='calamine', columns=[1,2])
+        file_object = 'https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAS-HISTORICO.xls'
+    elif benchmark.lower()=="imab":
+        file_object = 'https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB-HISTORICO.xls'
     elif benchmark.lower()=="imab5":
-        indice = pl.read_excel('https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB5-HISTORICO.xls',
-                     engine='calamine', columns=[1,2])
+        file_object = 'https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB5-HISTORICO.xls'
     elif benchmark.lower()=="imab5+":
-        indice = pl.read_excel('https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB5MAIS-HISTORICO.xls',
-                     engine='calamine', columns=[1,2])
+        file_object = 'https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB5MAIS-HISTORICO.xls'
     elif benchmark.lower()=="imab5p2":
-        indice = pl.read_excel('https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB5P2-HISTORICO.xls',
-                     engine='calamine', columns=[1,2])
+        file_object = 'https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB5P2-HISTORICO.xls'
     elif benchmark.lower()=="irfm":
-        indice = pl.read_excel('https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IRFM-HISTORICO.xls',
-                     engine='calamine', columns=[1,2])
+        file_object = 'https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IRFM-HISTORICO.xls'
     elif benchmark.lower()=="irfmp2":
-        indice = pl.read_excel('https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IRFMP2-HISTORICO.xls',
-                     engine='calamine', columns=[1,2])
+        file_object = 'https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IRFMP2-HISTORICO.xls'
     elif benchmark.lower()=="ihfa":
-        indice = pl.read_excel('https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IHFA-HISTORICO.xls',
-                     engine='calamine', columns=[1,2])
+        file_object = 'https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IHFA-HISTORICO.xls'
     else:
-        raise ValueError('Benchmark não encontrado.')
+        raise ValueError('Benchmark não encontrado.')                                            
+    if proxy:
+        file_object = check_proxy(file_object, proxy)
+    indice = pl.read_excel(file_object, engine='calamine', columns=[1,2])
     indice = indice.filter((pl.col('Data de Referência')>=pd.to_datetime(data_inicio)) & (pl.col('Data de Referência')<=pd.to_datetime(data_fim)))
     indice = indice.rename({'Número Índice': benchmark.upper()})
     return indice.to_pandas().set_index('Data de Referência')
@@ -145,7 +151,7 @@ def get_benchmarks(data_inicio: str, data_fim: str, benchmark: str = "CDI", meto
             df_benchmark = yf.download("BRL=X", start=data_inicio, end=data_fim, interval="1d", auto_adjust=True)["Close"]
             df_benchmark.columns = ["USD"]
         else:
-            df_benchmark = get_indices_anbima(data_inicio, data_fim, benchmark)
+            df_benchmark = get_indices_anbima(data_inicio, data_fim, benchmark, proxy)
         df_benchmark[f'Retorno {benchmark.upper()}'] = df_benchmark[benchmark.upper()].pct_change()
         df_benchmark[f'Retorno Acumulado {benchmark.upper()}'] = (1+df_benchmark[f'Retorno {benchmark.upper()}']).cumprod()-1
     return df_benchmark
