@@ -26,7 +26,11 @@ pyettj = [
 ]
 polars = "^1.27.1"
 fastexcel = "^0.13.0"
-pyarrow = "19.0.1"
+certifi = ">=2024.7.4"
+urllib3 = ">=2.2.2"
+Pillow = ">=10.4.0"
+lxml = ">=5.3.0"
+protobuf = ">=4.25.3"
 yfinance = "0.2.59"
 
 [build-system]
