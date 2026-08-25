@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 @author: Rafael
 """
 
 import warnings
-from typing import Any, List, Tuple, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -23,14 +22,14 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, rgb_to_hsv
 
 
-def _get_valores_iniciais(df: pd.DataFrame) -> List[float]:
+def _get_valores_iniciais(df: pd.DataFrame) -> list[float]:
     if isinstance(df, pd.DataFrame):
         return [df[df[col].notnull()][col].iloc[0] for col in df.columns]
     else:
         return [value for value in df.values if np.isnan(value) == False][0]
 
 
-def _get_valores_finais(df: pd.DataFrame) -> List[float]:
+def _get_valores_finais(df: pd.DataFrame) -> list[float]:
     if isinstance(df, pd.DataFrame):
         return [df[df[col].notnull()][col].iloc[-1] for col in df.columns]
     else:
@@ -61,7 +60,7 @@ def calcula_retorno_janelas_moveis(
 
 def calcula_risco_retorno_fundos(
     dados_fundos_cvm: pd.DataFrame,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Função que extrai diversas informações de retorno e risco para uma primeira análise dos fundos.
     Parâmetros:
     -dados_fundos_cvm (dataframe): série temporal contendo as cotas diarias dos fundos. Cada coluna deve ser a cota de um fundo e índice as datas.
@@ -78,22 +77,14 @@ def calcula_risco_retorno_fundos(
     rentabilidade_fundos_acumulada = (1 + rentabilidade_fundos_diaria).cumprod() - 1
 
     T = serie_fundos.shape[0]
-    valores_finais_nao_nulos = pd.DataFrame(
-        _get_valores_finais(cotas_normalizadas), index=cotas_normalizadas.columns
-    ).T
+    valores_finais_nao_nulos = pd.DataFrame(_get_valores_finais(cotas_normalizadas), index=cotas_normalizadas.columns).T
     retorno_periodo_anualizado = (
-        (valores_finais_nao_nulos / _get_valores_iniciais(cotas_normalizadas))
-        ** (252 / T)
-        - 1
+        (valores_finais_nao_nulos / _get_valores_iniciais(cotas_normalizadas)) ** (252 / T) - 1
     ).T
     retorno_periodo_anualizado.columns = ["rentabilidade"]
 
-    rentabilidade_acumulada_por_ano = (
-        rentabilidade_fundos_acumulada.groupby(pd.Grouper(freq="Y")).last(1).T
-    )
-    rentabilidade_acumulada_por_ano.columns = [
-        str(x)[:4] for x in rentabilidade_acumulada_por_ano.columns
-    ]
+    rentabilidade_acumulada_por_ano = rentabilidade_fundos_acumulada.groupby(pd.Grouper(freq="Y")).last(1).T
+    rentabilidade_acumulada_por_ano.columns = [str(x)[:4] for x in rentabilidade_acumulada_por_ano.columns]
 
     volatilidade_fundos = rentabilidade_fundos_diaria.std().to_frame() * np.sqrt(252)
     volatilidade_fundos.columns = ["volatilidade"]
@@ -122,10 +113,10 @@ def remove_outliers(df: pd.DataFrame, q: float = 0.05) -> pd.DataFrame:
 
 def plotar_comparacao_risco_retorno(
     df: pd.DataFrame,
-    risco_retorno_carteira: Union[Tuple[int, int], None] = None,
-    risco_retorno_benchmark: Union[Tuple[int, int], None] = None,
-    nome_carteira: Union[str, None] = None,
-    nome_benchmark: Union[str, None] = None,
+    risco_retorno_carteira: tuple[int, int] | None = None,
+    risco_retorno_benchmark: tuple[int, int] | None = None,
+    nome_carteira: str | None = None,
+    nome_benchmark: str | None = None,
     **opcionais: Any,
 ) -> None:
     if risco_retorno_carteira:
@@ -134,17 +125,11 @@ def plotar_comparacao_risco_retorno(
         risco_benchmark, retorno_benchmark = risco_retorno_benchmark
 
     plt.figure(figsize=(opcionais.get("figsize")))
-    sns.scatterplot(
-        data=df, y="rentabilidade", x="volatilidade", alpha=0.45, color="gray"
-    )
+    sns.scatterplot(data=df, y="rentabilidade", x="volatilidade", alpha=0.45, color="gray")
     if risco_retorno_carteira:
-        plt.scatter(
-            x=risco_carteira, y=retorno_carteira, marker="o", color="blue", s=200
-        )
+        plt.scatter(x=risco_carteira, y=retorno_carteira, marker="o", color="blue", s=200)
     if risco_retorno_benchmark:
-        plt.scatter(
-            x=risco_benchmark, y=retorno_benchmark, marker="o", color="red", s=200
-        )
+        plt.scatter(x=risco_benchmark, y=retorno_benchmark, marker="o", color="red", s=200)
     plt.ylabel("Retorno (%aa)\n", rotation=0, labelpad=-70, loc="top")
     plt.xlabel("Volatilidade (%aa)")
     plt.suptitle("Risco x Retorno")
@@ -161,9 +146,7 @@ def plotar_comparacao_risco_retorno(
             textcoords="offset points",
             color="darkblue",
             weight="bold",
-            arrowprops=dict(
-                arrowstyle="->", color="blue", connectionstyle="arc3,rad=-0.1"
-            ),
+            arrowprops=dict(arrowstyle="->", color="blue", connectionstyle="arc3,rad=-0.1"),
         )
     if risco_retorno_benchmark:
         plt.annotate(
@@ -174,15 +157,11 @@ def plotar_comparacao_risco_retorno(
             textcoords="offset points",
             color="darkred",
             weight="bold",
-            arrowprops=dict(
-                arrowstyle="->", color="r", connectionstyle="arc3,rad=-0.1"
-            ),
+            arrowprops=dict(arrowstyle="->", color="r", connectionstyle="arc3,rad=-0.1"),
         )
 
 
-def plotar_evolucao(
-    df: pd.DataFrame, lista_fundos: List[str], **opcionais: Any
-) -> Union[pd.DataFrame, None]:
+def plotar_evolucao(df: pd.DataFrame, lista_fundos: list[str], **opcionais: Any) -> pd.DataFrame | None:
 
     lista_fundos = [x.upper() for x in lista_fundos]
     cnpj = [x for x in df.columns.tolist() if x.split(" // ")[0] in lista_fundos]
@@ -269,9 +248,7 @@ def plotar_evolucao(
         return None
 
 
-def plotar_rentabilidade_janela_movel(
-    df: pd.DataFrame, HP: int, benchmarks: pd.DataFrame
-) -> None:
+def plotar_rentabilidade_janela_movel(df: pd.DataFrame, HP: int, benchmarks: pd.DataFrame) -> None:
     for fundo in df.columns:
         retorno = calcula_retorno_janelas_moveis(df[[fundo]], HP, benchmarks)
 
@@ -296,10 +273,10 @@ def plotar_rentabilidade_janela_movel(
 
 def plotar_comparacao_risco_retorno(
     df: pd.DataFrame,
-    risco_retorno_carteira: Union[Tuple[int, int], None] = None,
-    risco_retorno_benchmark: Union[Tuple[int, int], None] = None,
-    nome_carteira: Union[str, None] = None,
-    nome_benchmark: Union[str, None] = None,
+    risco_retorno_carteira: tuple[int, int] | None = None,
+    risco_retorno_benchmark: tuple[int, int] | None = None,
+    nome_carteira: str | None = None,
+    nome_benchmark: str | None = None,
     **opcionais: Any,
 ) -> None:
     if risco_retorno_carteira:
@@ -308,17 +285,11 @@ def plotar_comparacao_risco_retorno(
         risco_benchmark, retorno_benchmark = risco_retorno_benchmark
 
     plt.figure(figsize=(opcionais.get("figsize")))
-    sns.scatterplot(
-        data=df, y="rentabilidade", x="volatilidade", alpha=0.45, color="gray"
-    )
+    sns.scatterplot(data=df, y="rentabilidade", x="volatilidade", alpha=0.45, color="gray")
     if risco_retorno_carteira:
-        plt.scatter(
-            x=risco_carteira, y=retorno_carteira, marker="o", color="blue", s=200
-        )
+        plt.scatter(x=risco_carteira, y=retorno_carteira, marker="o", color="blue", s=200)
     if risco_retorno_benchmark:
-        plt.scatter(
-            x=risco_benchmark, y=retorno_benchmark, marker="o", color="red", s=200
-        )
+        plt.scatter(x=risco_benchmark, y=retorno_benchmark, marker="o", color="red", s=200)
     plt.ylabel("Retorno (%aa)\n", rotation=0, labelpad=-70, loc="top")
     plt.xlabel("Volatilidade (%aa)")
     plt.box(False)
@@ -334,9 +305,7 @@ def plotar_comparacao_risco_retorno(
             textcoords="offset points",
             color="darkblue",
             weight="bold",
-            arrowprops=dict(
-                arrowstyle="->", color="blue", connectionstyle="arc3,rad=-0.1"
-            ),
+            arrowprops=dict(arrowstyle="->", color="blue", connectionstyle="arc3,rad=-0.1"),
         )
     if risco_retorno_benchmark:
         plt.annotate(
@@ -347,9 +316,7 @@ def plotar_comparacao_risco_retorno(
             textcoords="offset points",
             color="darkred",
             weight="bold",
-            arrowprops=dict(
-                arrowstyle="->", color="r", connectionstyle="arc3,rad=-0.1"
-            ),
+            arrowprops=dict(arrowstyle="->", color="r", connectionstyle="arc3,rad=-0.1"),
         )
 
 
@@ -367,9 +334,7 @@ def supera_benchmark(
     for i, fundo in enumerate(tqdm(dados.columns.tolist())):
         df1 = pd.DataFrame()
         for bench in lista_benchmarks:
-            retorno = calcula_retorno_janelas_moveis(
-                dados[[fundo]], HP, benchmarks[[bench]]
-            )
+            retorno = calcula_retorno_janelas_moveis(dados[[fundo]], HP, benchmarks[[bench]])
             retorno = retorno.sort_index().dropna()
             if retorno.empty:
                 break
@@ -384,11 +349,7 @@ def supera_benchmark(
                 ).T.set_index("Fundo")
                 df1 = pd.concat([df1, df], axis=1)
         percentuais = pd.concat([percentuais, df1], axis=0)
-    return (
-        percentuais[(percentuais >= limit * 100)]
-        .dropna()
-        .sort_values(percentuais.columns.tolist(), ascending=False)
-    )
+    return percentuais[(percentuais >= limit * 100)].dropna().sort_values(percentuais.columns.tolist(), ascending=False)
 
 
 def qto_supera_benchmark(
@@ -408,9 +369,7 @@ def qto_supera_benchmark(
     for i, fundo in enumerate(tqdm(dados.columns.tolist())):
         df1 = pd.DataFrame()
         for bench in lista_benchmarks:
-            retorno = calcula_retorno_janelas_moveis(
-                dados[[fundo]], HP, benchmarks[[bench]]
-            )
+            retorno = calcula_retorno_janelas_moveis(dados[[fundo]], HP, benchmarks[[bench]])
             retorno = retorno.sort_index().dropna()
             if retorno.empty:
                 break
@@ -433,17 +392,13 @@ def qto_supera_benchmark(
     percentuais = (percentuais.sort_values(cols1, ascending=False) * 100).fillna(0)
     if not bench_corte:
         for bench in lista_benchmarks:
-            percentuais = percentuais[
-                percentuais[f"% do {bench}, em média"] >= corte_bench
-            ]
+            percentuais = percentuais[percentuais[f"% do {bench}, em média"] >= corte_bench]
     else:
-        percentuais = percentuais[
-            percentuais[f"% do {bench_corte}, em média"] >= corte_bench
-        ]
+        percentuais = percentuais[percentuais[f"% do {bench_corte}, em média"] >= corte_bench]
     return percentuais
 
 
-def _traduz_frequencia(frequencia: str) -> List[str]:
+def _traduz_frequencia(frequencia: str) -> list[str]:
     if "month" in frequencia.lower().split(" ")[0]:
         freq = ["Meses", "Mensais"]
     elif "year" in frequencia.lower().split(" ")[0]:
@@ -457,9 +412,7 @@ def _traduz_frequencia(frequencia: str) -> List[str]:
     return freq
 
 
-def calcula_rentabilidade_periodo(
-    dados_diarios: pd.DataFrame, freq: str = "M"
-) -> pd.DataFrame:
+def calcula_rentabilidade_periodo(dados_diarios: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
     if freq.lower() == "sem":
         freq = "Q"
         inicio = dados_diarios.resample(f"{freq}S").first()
@@ -471,45 +424,25 @@ def calcula_rentabilidade_periodo(
         fim = dados_diarios.resample(f"{freq}E").last()
     rentabilidade_periodo_total = pd.DataFrame()
     for init, end in zip(inicio.index, fim.index):
-        df = (
-            dados_diarios[(dados_diarios.index >= init) & (dados_diarios.index <= end)]
-            .ffill()
-            .pct_change()
-        )
+        df = dados_diarios[(dados_diarios.index >= init) & (dados_diarios.index <= end)].ffill().pct_change()
         rentabilidade_periodo = ((1 + df).cumprod() - 1).tail(1)
         rentabilidade_periodo.index = [end]
-        rentabilidade_periodo_total = pd.concat(
-            [rentabilidade_periodo_total, rentabilidade_periodo]
-        )
+        rentabilidade_periodo_total = pd.concat([rentabilidade_periodo_total, rentabilidade_periodo])
     return rentabilidade_periodo_total.asfreq(f"{freq}E")
 
 
-def _retorno_heatmap(
-    dados_diarios: pd.DataFrame, period: str, nome: str
-) -> Union[pd.DataFrame, List[str]]:
+def _retorno_heatmap(dados_diarios: pd.DataFrame, period: str, nome: str) -> pd.DataFrame | list[str]:
     returns = calcula_rentabilidade_periodo(dados_diarios, period.upper()) * 100
-    frequencia = (
-        period
-        if period == "sem"
-        else str(returns.index.freq).replace("<", "").replace(">", "")
-    )
+    frequencia = period if period == "sem" else str(returns.index.freq).replace("<", "").replace(">", "")
     freq = _traduz_frequencia(frequencia)
 
     returns["Ano"] = returns.index.year
     returns[f"{freq[0]}"] = returns.index.month
-    returns = (
-        returns.pivot_table(
-            index=f"{freq[0]}", columns="Ano", values=nome, aggfunc="last"
-        )
-        .fillna(0)
-        .T
-    )
+    returns = returns.pivot_table(index=f"{freq[0]}", columns="Ano", values=nome, aggfunc="last").fillna(0).T
     return returns, freq
 
 
-def plotar_heatmap_rentabilidade(
-    dados_diarios: pd.DataFrame, period: str = "M"
-) -> None:
+def plotar_heatmap_rentabilidade(dados_diarios: pd.DataFrame, period: str = "M") -> None:
     """Função que plota gráfico tipo heatmap que exibe o desempenho do fundo ou do benchmark no periodo indicado, que pode ser:
     -mensal (M),
     -trimestral (Q),
@@ -559,9 +492,7 @@ def plotar_heatmap_rentabilidade(
 
     # align plot to match other
     if ylabel:
-        ax.set_ylabel(
-            "Ano", fontname=fontname, fontweight="bold", fontsize=12, rotation=0
-        )
+        ax.set_ylabel("Ano", fontname=fontname, fontweight="bold", fontsize=12, rotation=0)
         ax.yaxis.set_label_coords(-0.1, 0.5)
 
     ax.tick_params(colors="#808080")
@@ -676,15 +607,11 @@ def plotar_heatmap_comparar_benchmark(
                 va="center",  # Alinhamento vertical
                 color="darkblue" if j == df4.shape[1] - 1 else text_color,
                 fontsize=annot_size,  # Tamanho da fonte
-                weight="bold"
-                if j == df4.shape[1] - 1
-                else "normal",  # Negrito na última coluna
+                weight="bold" if j == df4.shape[1] - 1 else "normal",  # Negrito na última coluna
             )
 
     for i, color in enumerate(row_colors):
-        plt.gca().add_patch(
-            plt.Rectangle((0, i), df4.shape[1], 1, fill=True, color=color, lw=0)
-        )
+        plt.gca().add_patch(plt.Rectangle((0, i), df4.shape[1], 1, fill=True, color=color, lw=0))
 
     for i in range(df4.shape[0] + 1):
         plt.axhline(i, color="white", linewidth=0.5, linestyle="-")
@@ -692,12 +619,8 @@ def plotar_heatmap_comparar_benchmark(
         plt.axvline(j, color="white", linewidth=0.5, linestyle="-")
 
     ax.set_xticks(np.arange(df4.shape[1] - 1) + 0.45)
-    ax.set_xticklabels(
-        df4[df4.columns[:-1]].columns, rotation=0, fontsize=annot_size * 1.2
-    )
-    ax.tick_params(
-        axis="x", which="major", pad=5
-    )  # Aumentar o espaçamento da última coluna
+    ax.set_xticklabels(df4[df4.columns[:-1]].columns, rotation=0, fontsize=annot_size * 1.2)
+    ax.tick_params(axis="x", which="major", pad=5)  # Aumentar o espaçamento da última coluna
 
     # texto "Ultrapassa Benckmark"
     ax.text(
@@ -712,9 +635,7 @@ def plotar_heatmap_comparar_benchmark(
     )
 
     if ylabel:
-        ax.set_ylabel(
-            "Ano", fontname=fontname, fontweight="bold", fontsize=12, rotation=0
-        )
+        ax.set_ylabel("Ano", fontname=fontname, fontweight="bold", fontsize=12, rotation=0)
         ax.yaxis.set_label_coords(-0.1, 0.5)
 
     ax.tick_params(colors="#808080")

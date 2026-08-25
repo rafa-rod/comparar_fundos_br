@@ -34,10 +34,7 @@ class TestClass:
         with pytest.raises(Exception) as error2:
             informe_diario_fundos = fundosbr(2022, 7, proxy="teste")
 
-        assert (
-            str(error2.value)
-            == "Verifique se a proxy está correta. ParserError: Error tokenizing data"
-        )
+        assert str(error2.value) == "Verifique se a proxy está correta. ParserError: Error tokenizing data"
         # assert str(error3.value) == "Informar proxy. HTTPError: authenticationrequired"
 
         fidc = get_fidc(2022, 6, proxy=self.proxy)
@@ -59,20 +56,14 @@ class TestClass:
     def test_benchmarks(self):
         cdi = get_benchmark("2022-01-01", "2022-07-01", proxy=self.proxy)
         assert isinstance(cdi, pd.core.frame.DataFrame)
-        ibov = get_benchmark(
-            "2022-01-01", "2022-07-01", benchmark="ibov", proxy=self.proxy
-        )
+        ibov = get_benchmark("2022-01-01", "2022-07-01", benchmark="ibov", proxy=self.proxy)
         assert isinstance(ibov, pd.core.frame.DataFrame)
-        stocks = get_stocks(
-            ["PETR4, VALE3"], "2022-01-01", "2022-07-01", proxy=self.proxy
-        )
+        stocks = get_stocks(["PETR4, VALE3"], "2022-01-01", "2022-07-01", proxy=self.proxy)
         assert isinstance(stocks, pd.core.frame.DataFrame)
         stocks1 = get_stocks("PETR4", "2022-01-01", "2022-07-01", proxy=self.proxy)
         assert isinstance(stocks1, pd.core.frame.DataFrame)
         with pytest.raises(Exception) as error8:
-            cdi, cdi_acumulado = get_benchmark(
-                "2022-01-01", "2022-07-01", benchmark="selic", proxy=self.proxy
-            )
+            cdi, cdi_acumulado = get_benchmark("2022-01-01", "2022-07-01", benchmark="selic", proxy=self.proxy)
         assert str(error8.value) == "Benchmark não encontrado."
 
     def comparador(self):
@@ -84,14 +75,10 @@ class TestClass:
             rentabilidade_fundos_total,
         ) = calcula_rentabilidade_fundos(self.informe_diario_fundos)
         assert isinstance(risco_retorno, pd.core.frame.DataFrame)
-        melhores_fundos, piores_fundos = melhores_e_piores_fundos(
-            rentabilidade_fundos_total, num=10
-        )
+        melhores_fundos, piores_fundos = melhores_e_piores_fundos(rentabilidade_fundos_total, num=10)
         assert isinstance(melhores_fundos, pd.core.frame.DataFrame)
         assert isinstance(piores_fundos, pd.core.frame.DataFrame)
-        fundos_maior_risco, fundos_menor_risco = melhores_e_piores_fundos(
-            risco_retorno[["volatilidade"]], num=10
-        )
+        fundos_maior_risco, fundos_menor_risco = melhores_e_piores_fundos(risco_retorno[["volatilidade"]], num=10)
         assert isinstance(fundos_maior_risco, pd.core.frame.DataFrame)
         assert isinstance(fundos_menor_risco, pd.core.frame.DataFrame)
 

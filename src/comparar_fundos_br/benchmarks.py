@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 @author: Rafael
 """
@@ -6,7 +5,6 @@
 import io
 import warnings
 from io import BytesIO
-from typing import Dict, List, Optional, Union
 
 import pandas as pd
 import polars as pl
@@ -30,7 +28,7 @@ def get_cdi(
     inicio: str,
     fim: str,
     metodo_cdi: str = "bacen",
-    proxies: Optional[Dict[str, str]] = None,
+    proxies: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """Função que provê o retorno do CDI usada como referência especialmente para Renda Fixa.
     Esta função usa os métodos: tesouro, anbima ou bacen para extrair a rentabilidade.
@@ -51,9 +49,7 @@ def get_cdi(
             & (titulos_ofertados["Data Base"] < fim)
             & (~titulos_ofertados["Tipo Titulo"].str.contains("&".join(excluir)))
         ].set_index(["Tipo Titulo", "Data Vencimento"])
-        selic = titulos_ofertados_filtrado.loc[["Tesouro Selic"], :].sort_values(
-            "Data Base", ascending=False
-        )
+        selic = titulos_ofertados_filtrado.loc[["Tesouro Selic"], :].sort_values("Data Base", ascending=False)
         selic_longa = (
             selic.reset_index()
             .groupby(["Data Base"])[
@@ -84,9 +80,7 @@ def get_cdi(
         )
         imas = imas.rename({"Número Índice": "CDI"})
         imas = imas.with_columns(pl.col("CDI").pct_change().alias("Retorno CDI"))
-        imas = imas.with_columns(
-            ((pl.col("Retorno CDI") + 1).cum_prod() - 1).alias("Retorno Acumulado CDI")
-        )
+        imas = imas.with_columns(((pl.col("Retorno CDI") + 1).cum_prod() - 1).alias("Retorno Acumulado CDI"))
         cdi = imas.to_pandas().set_index("Data de Referência")
     elif metodo_cdi.lower() == "bacen":
         codigo_bcb = 12
@@ -115,7 +109,7 @@ def get_indices_anbima(
     data_inicio: str,
     data_fim: str,
     benchmark: str = "imas",
-    proxy: Optional[Dict[str, str]] = None,
+    proxy: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """Função que provê o retorno de alguns indices ANBIMA usada como referência, especialmente para Renda Fixa.
     Esta função implementa os seguintes índices:
@@ -126,9 +120,28 @@ def get_indices_anbima(
     -IMA-B5 P2 (imab5p2);
     -IRFM (irfm);
     -IRFM P2 (irfmp2);
-    -IHFA (ihfa).
+    -IHFA (ihfa);
+    -IDA-DI (ida-di);
+    -IDA-IPCA (ida-ipca);
+    -IDA-GERAL (ida-geral);
     As datas devem ser no formato string '2025-01-02', ou seja, 'ANO-MES-DIA'.
     Mais informações em https://data.anbima.com.br/indices"""
+
+    BASE_ANBIMA = "https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/{arquivo}"
+
+    ARQUIVOS_ANBIMA = {
+        "imas": "IMAS-HISTORICO.xls",
+        "imab": "IMAB-HISTORICO.xls",
+        "imab5": "IMAB5-HISTORICO.xls",
+        "imab5+": "IMAB5MAIS-HISTORICO.xls",
+        "imab5p2": "IMAB5P2-HISTORICO.xls",
+        "irfm": "IRFM-HISTORICO.xls",
+        "irfmp2": "IRFMP2-HISTORICO.xls",
+        "ihfa": "IHFA-HISTORICO.xls",
+        "ida-di": "IDADI-HISTORICO.xls",  # debentures indexadas ao DI
+        "ida-ipca": "IDAIPCA-HISTORICO.xls",  # debentures indexadas ao IPCA
+        "ida-geral": "IDAGERAL-HISTORICO.xls",
+    }
 
     def check_proxy(url, proxy):
         response = requests.get(url, proxies=proxy, stream=True)
@@ -136,26 +149,15 @@ def get_indices_anbima(
         file_like_object = BytesIO(response.content)
         return file_like_object
 
-    if benchmark.lower() == "imas":
-        file_object = "https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAS-HISTORICO.xls"
-    elif benchmark.lower() == "imab":
-        file_object = "https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB-HISTORICO.xls"
-    elif benchmark.lower() == "imab5":
-        file_object = "https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB5-HISTORICO.xls"
-    elif benchmark.lower() == "imab5+":
-        file_object = "https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB5MAIS-HISTORICO.xls"
-    elif benchmark.lower() == "imab5p2":
-        file_object = "https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IMAB5P2-HISTORICO.xls"
-    elif benchmark.lower() == "irfm":
-        file_object = "https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IRFM-HISTORICO.xls"
-    elif benchmark.lower() == "irfmp2":
-        file_object = "https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IRFMP2-HISTORICO.xls"
-    elif benchmark.lower() == "ihfa":
-        file_object = "https://s3-data-prd-use1-precos.s3.us-east-1.amazonaws.com/arquivos/indices-historico/IHFA-HISTORICO.xls"
+    chave = benchmark.lower().strip()
+    if chave in ARQUIVOS_ANBIMA:
+        encontrado = [ARQUIVOS_ANBIMA[chave]]
+        for arquivo in encontrado:
+            url = BASE_ANBIMA.format(arquivo=arquivo)
+            file_object = check_proxy(url, proxy)
     else:
-        raise ValueError("Benchmark não encontrado.")
-    if proxy:
-        file_object = check_proxy(file_object, proxy)
+        raise ValueError(f"Benchmark não encontrado: {chave}")
+
     indice = pl.read_excel(file_object, engine="calamine", columns=[1, 2])
     indice = indice.filter(
         (pl.col("Data de Referência") >= pd.to_datetime(data_inicio))
@@ -226,9 +228,7 @@ def get_benchmarks(
             df_benchmark.columns = ["USD"]
         else:
             df_benchmark = get_indices_anbima(data_inicio, data_fim, benchmark, proxy)
-        df_benchmark[f"Retorno {benchmark.upper()}"] = df_benchmark[
-            benchmark.upper()
-        ].pct_change()
+        df_benchmark[f"Retorno {benchmark.upper()}"] = df_benchmark[benchmark.upper()].pct_change()
         df_benchmark[f"Retorno Acumulado {benchmark.upper()}"] = (
             1 + df_benchmark[f"Retorno {benchmark.upper()}"]
         ).cumprod() - 1
@@ -236,10 +236,10 @@ def get_benchmarks(
 
 
 def get_stocks(
-    acoes: Union[List[str], str],
+    acoes: list[str] | str,
     data_inicio: str,
     data_fim: str,
-    proxy: Union[Dict[str, str], None] = None,
+    proxy: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """Função para capturar dados de Ações ou Índices Listados."""
     if proxy:
@@ -250,9 +250,7 @@ def get_stocks(
             if not st.endswith(".SA"):
                 st = st + ".SA"
             if proxy:
-                df = yf.download(st, start=data_inicio, end=data_fim, auto_adjust=True)[
-                    "Close"
-                ]
+                df = yf.download(st, start=data_inicio, end=data_fim, auto_adjust=True)["Close"]
             else:
                 df = yf.download(st, start=data_inicio, end=data_fim)["Close"]
             df1 = pd.concat([df, df1], axis=1)
@@ -260,9 +258,7 @@ def get_stocks(
         if not acoes.endswith(".SA"):
             acoes = acoes + ".SA"
         if proxy:
-            df1 = yf.download(acoes, start=data_inicio, end=data_fim, auto_adjust=True)[
-                "Close"
-            ]
+            df1 = yf.download(acoes, start=data_inicio, end=data_fim, auto_adjust=True)["Close"]
         else:
             df1 = yf.download(acoes, start=data_inicio, end=data_fim)["Close"]
     df1.index = pd.to_datetime(df1.index)
