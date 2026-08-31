@@ -24,7 +24,7 @@ A biblioteca **comparar_fundos_br** possui uma série de funções que permitem:
 - Calcular risco (volatilidade) e retorno dos fundos;
 - Cálculo de rentabilidade no período selecionado, rentabilidade diária, rentabilidade acumulada, rentabilidade anualizada;
 - Filtrar fundos por CNPJ ou por nome (ex: fundos que contenham a palavra Bradesco);
-- Comparar fundos com benchmarks como: CDI, Índice Bovespa, IMA-B, IMA-B 5 e IMA-B 5+;
+- Comparar fundos com benchmarks como: CDI, Índice Bovespa, Ações, ETFs, Dólar Fechamento, Dólar Oficial PTAX (compra e venda),IMA-S, IMA-B, IMA-B 5, IMA-B 5+, IMA-B 5 P2, IRFM, IRFM P2, IHFA, IDA-DI, IDA-IPCA, IDA-Geral;
 - Comparar fundos com sua carteira de investimentos;
 - Plotar gráficos de comparação e evolução dos fundos em período específico juntamente com seus benchmarks.
 

@@ -11,6 +11,9 @@ import polars as pl
 import requests
 import tesouro_direto_br as tesouro_direto
 import yfinance as yf
+import numpy as np
+from datetime import datetime, timedelta
+import time
 
 warnings.filterwarnings("ignore")
 
@@ -171,8 +174,9 @@ def get_benchmarks(
     data_inicio: str,
     data_fim: str,
     benchmark: str = "CDI",
-    metodo_cdi="bacen",
-    proxy=None,
+    metodo_cdi: str = "bacen",
+    compra: bool = False,
+    proxy: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """Função que provê o retorno de alguns indices ANBIMA, CDI e renda variável: ibov, divo11 (similar ao IDIV) e sp500.
     Esta função implementa os seguintes índices anbima:
@@ -182,7 +186,10 @@ def get_benchmarks(
     -IMA-B5 P2 (imab5p2);
     -IRFM (irfm);
     -IRFM P2 (irfmp2);
-    -IHFA (ihfa).
+    -IHFA (ihfa);
+    -IDA-DI (ida-di);
+    -IDA-IPCA (ida-ipca);
+    -IDA-GERAL (ida-geral).
     As datas devem ser no formato string '2025-01-02', ou seja, 'ANO-MES-DIA'.
     A saída gera o retorno diário e o acumulado."""
     if proxy:
@@ -226,6 +233,9 @@ def get_benchmarks(
                 auto_adjust=True,
             )["Close"]
             df_benchmark.columns = ["USD"]
+        elif benchmark.upper() == "PTAX":
+            df_benchmark = get_cambio_ptax(data_inicio, data_fim, compra=compra)
+            df_benchmark.columns = ["PTAX"]
         else:
             df_benchmark = get_indices_anbima(data_inicio, data_fim, benchmark, proxy)
         df_benchmark[f"Retorno {benchmark.upper()}"] = df_benchmark[benchmark.upper()].pct_change()
@@ -234,6 +244,64 @@ def get_benchmarks(
         ).cumprod() - 1
     return df_benchmark
 
+def get_cambio_ptax(
+    data_inicio: str,
+    data_fim: str,
+    compra: bool = False,
+    proxy: dict[str, str] | None = None,
+) -> pd.DataFrame:
+    """
+    Usa dados do Sistema de Gestao de Series do Banco Central:
+    https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do?method=prepararTelaLocalizarSeries
+    para obter os dados do dólar oficial (PTAX, fonte Sisbacen PTAX800) fazendo requisicoes em janelas de ate 10 anos.
+
+    Se desejar valores de venda, colocar compra = False e para compra, compra = True.
+    """
+    if isinstance(data_inicio, str):
+        inicio = datetime.strptime(data_inicio, '%Y-%m-%d')
+    else:
+        inicio = data_inicio
+    if isinstance(data_fim, str):
+        fim = datetime.strptime(data_fim, '%Y-%m-%d')
+    else:
+        fim = data_fim
+
+    codigo_bcb = 10813 if compra else 1
+
+    todos_dados = []
+    data_atual = inicio
+    while data_atual <= fim:
+        data_limite = min(data_atual + timedelta(days=365 * 10 - 1), fim)
+        inicio_str = data_atual.strftime('%d/%m/%Y')
+        fim_str = data_limite.strftime('%d/%m/%Y')
+
+        url = (
+            f'https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo_bcb}/dados'
+            f'?formato=json&dataInicial={inicio_str}&dataFinal={fim_str}'
+        )
+        try:
+            if proxy:
+                response = requests.get(url, proxies=proxy, timeout=30, verify=False)
+            else:
+                response = requests.get(url, timeout=30)
+            dados = response.json()
+            if dados and isinstance(dados, list):
+                todos_dados.extend(dados)
+                print(f"Baixados dados de {inicio_str} a {fim_str}: {len(dados)} registros")
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"Erro ao baixar dados para o periodo {inicio_str} a {fim_str}: {e}")
+
+        data_atual = data_limite + timedelta(days=1)
+
+    if todos_dados:
+        df = pd.DataFrame(todos_dados)
+        df['data'] = pd.to_datetime(df['data'], format='%d/%m/%Y')
+        df['valor'] = df['valor'].astype(float)
+        df = df.set_index('data').sort_index()
+        df.columns = ['Cambio']
+        return df
+    return pd.DataFrame(columns=['Cambio'])
 
 def get_stocks(
     acoes: list[str] | str,
