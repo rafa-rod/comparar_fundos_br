@@ -317,17 +317,10 @@ Para Fundos de Participação (FIPs) e Fundos de Direitos Creditórios (FIDCs), 
 
 ```python
 #Informe apenas o ano para obter os dados de FIPs disponíveis
-fip = comp.get_fip(2022)
+fip = comp.get_fip(2026, proxy=proxies)
 
 #Para FIDCs informe ano e mês
-from tqdm import tqdm
-
-informe_fidcs_all = pd.DataFrame()
-for ano in [2020, 2021]:
-   for mes in tqdm(range(1, 13)):
-        informe_fidcs = comp.get_fidc(ano, mes, tabela = 'X', subtabela = 3, proxy=None)
-        if not informe_fidcs.empty:
-            informe_fidcs_all = pd.concat([informe_fidcs_all, informe_fidcs])
+fidc = comp.get_fidc(2026, tabela = 'X', subtabela = 3, proxy=proxies)
 ```
 
 _Os fundos exibidos acima são apenas exemplos mostrados aleatoriamente, não é recomendação de investimento ou desinvestimento._

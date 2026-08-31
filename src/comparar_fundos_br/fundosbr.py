@@ -11,6 +11,7 @@ from datetime import datetime
 import pandas as pd
 import polars as pl
 import requests
+from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
 
@@ -42,17 +43,58 @@ def _get_response(url: str, proxy: dict[str, str] | None = None):
     return resposta
 
 
-def _ler_zip_files(resposta, arquivo: str) -> pl.dataframe.frame.DataFrame:
-    if str(resposta) != "<Response [200]>" and str(resposta) != "<Response [407]>":
-        raise ValueError("Não foi possível baixar os dados solicitados")
-    elif str(resposta) == "<Response [407]>":
+def _ler_zip_files(resposta, arquivo: str) -> pl.DataFrame:
+    """
+    Lê arquivos CSV dentro de um ZIP baixado da CVM.
+
+    Args:
+        resposta: Objeto Response do requests
+        arquivo: Nome do arquivo dentro do ZIP
+
+    Returns:
+        Polars DataFrame com os dados
+
+    Raises:
+        ValueError: Se a resposta não for 200
+        FileNotFoundError: Se o arquivo não existir dentro do ZIP
+    """
+    # Verifica o status code
+    if resposta.status_code == 200:
+        # Sucesso - processa o arquivo
+        try:
+            zf = zipfile.ZipFile(io.BytesIO(resposta.content))
+
+            # Verifica se o arquivo existe dentro do ZIP
+            if arquivo not in zf.namelist():
+                raise FileNotFoundError(f"Arquivo {arquivo} não encontrado no ZIP")
+
+            with zf.open(arquivo) as f:
+                lines = f.readlines()
+                lines = [i.strip().decode("ISO-8859-1").split(";") for i in lines]
+
+                if not lines:
+                    raise ValueError(f"Arquivo {arquivo} está vazio")
+
+                fundos = pl.DataFrame(lines[1:], schema=lines[0])
+                return fundos
+
+        except zipfile.BadZipFile:
+            raise ValueError("Arquivo ZIP corrompido ou inválido")
+
+    elif resposta.status_code == 407:
         raise ValueError("Necessário informar proxy correta. Response [407]")
-    zf = zipfile.ZipFile(io.BytesIO(resposta.content))
-    zf = zf.open(arquivo)
-    lines = zf.readlines()
-    lines = [i.strip().decode("ISO-8859-1").split(";") for i in lines]
-    fundos = pl.DataFrame(lines[1:], schema=lines[0])
-    return fundos
+
+    elif resposta.status_code == 404:
+        raise FileNotFoundError("Arquivo não encontrado na CVM (404)")
+
+    elif resposta.status_code == 403:
+        raise PermissionError("Acesso negado ao recurso (403)")
+
+    elif resposta.status_code in [500, 502, 503, 504]:
+        raise ConnectionError(f"Erro no servidor da CVM: {resposta.status_code}")
+
+    else:
+        raise ValueError(f"Erro inesperado ao baixar dados: {resposta.status_code}")
 
 
 def get_cadastro_fundos(
@@ -219,52 +261,179 @@ def fundosbr(
 
 
 def get_fip(ano: int, proxy: dict[str, str] | None = None) -> pd.DataFrame:
+    """
+    Captura dados de Fundos de Participaçõem em Investimentos (FIP) da CVM conforme ano apontado.
+    Após 2023, os dados de FIP passaram a ser quadrimestrais.
+    """
     start = time.time()
-    url = f"http://dados.cvm.gov.br/dados/FIP/DOC/INF_TRIMESTRAL/DADOS/inf_trimestral_fip_{ano:02d}.csv"
-    if proxy:
-        try:
-            dados_cvm = requests.get(url, proxies=proxy, verify=False)
-        except AttributeError:
-            raise ValueError("Necessário informar proxy correta.")
-    else:
-        dados_cvm = requests.get(url)
-    if str(dados_cvm) == "<Response [404]>":
-        raise ValueError("Não há dados para esta data. Response [404]")
-    lines = [i.strip().split(";") for i in dados_cvm.text.split("\n")]
-    end = time.time()
-    print(f"Finalizado em {round((end - start) / 60, 2)} minutos")
-    return pd.DataFrame(lines[1:], columns=lines[0])
+    url = (
+        f"http://dados.cvm.gov.br/dados/FIP/DOC/INF_TRIMESTRAL/DADOS/inf_trimestral_fip_{ano:02d}.csv"
+        if ano <= 2023
+        else f"http://dados.cvm.gov.br/dados/FIP/DOC/INF_QUADRIMESTRAL/DADOS/inf_quadrimestral_fip_{ano:02d}.csv"
+    )
+    try:
+        resposta = _get_response(url, proxy=proxy)
+
+        if resposta.status_code == 200:
+            lines = [i.strip().split(";") for i in resposta.text.split("\n")]
+            end = time.time()
+            print(f"Finalizado em {round((end - start) / 60, 2)} minutos")
+            return pd.DataFrame(lines[1:], columns=lines[0])
+        elif resposta.status_code == 404:
+            raise ValueError(f"Não há dados disponíveis para o ano {ano}. Arquivo não encontrado (404)")
+
+        elif resposta.status_code == 403:
+            raise PermissionError(f"Acesso negado ao recurso para o ano {ano}. Verifique suas permissões (403)")
+
+        elif resposta.status_code == 500:
+            raise ConnectionError(f"Erro interno no servidor da CVM para o ano {ano}. Tente novamente mais tarde (500)")
+
+        elif resposta.status_code == 503:
+            raise ConnectionError(f"Serviço da CVM indisponível para o ano {ano}. Tente novamente mais tarde (503)")
+
+        else:
+            raise ValueError(f"Erro inesperado ao acessar dados do ano {ano}: Status {resposta.status_code}")
+
+    except requests.exceptions.Timeout:
+        raise TimeoutError(f"Tempo limite excedido ao baixar dados do ano {ano}. Verifique sua conexão com a internet.")
+
+    except requests.exceptions.ConnectionError:
+        raise ConnectionError(f"Erro de conexão ao baixar dados do ano {ano}. Verifique sua conexão com a internet.")
+
+    except requests.exceptions.RequestException as e:
+        raise requests.exceptions.RequestException(f"Erro na requisição para o ano {ano}: {e!s}")
 
 
 def get_fidc(
-    ano: int, mes: int, tabela: str = "X", subtabela: int = 3, proxy: dict[str, str] | None = None
-) -> pd.DataFrame:
-    """Função que busca dados de Fundos Estruturados - FIDC do FUNDOS.NET da CVM
-    que se enquadram na instrução 175 da CVM, exemplo:
-    https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo=11701985000107
-    Outros fundos de crédito, até mesmo com FIDC no nome, podem estar nos informes diários.
-    A tabela I exibe dados gerais do fundo, enquanto a tabela X subtabela 3 indica a rentabilidade mensal.
-    Para demais tabelas, consultar site da CVM.
+    ano: int, tabela: str = "X", subtabela: int = 3, proxy: dict[str, str] | None = None, use_polars: bool = False
+) -> pd.DataFrame | pl.DataFrame:
+    """
+    Busca dados de Fundos de Investimento em Direitos Creditórios (FIDC) da CVM.
+
+    Args:
+        ano: Ano dos dados
+        tabela: Tabela a ser consultada (I, II, III, IV, V, VI, VII, VIII, IX, X)
+        subtabela: Subtabela (padrão 3 para rentabilidade mensal)
+        proxy: Configuração de proxy (opcional)
+        use_polars: Se True, retorna Polars DataFrame, senão Pandas
+
+    Returns:
+        DataFrame com os dados concatenados de todos os meses
+
+    Exemplo:
+        df = get_fidc(2024, tabela="X", subtabela=3)
     """
     start = time.time()
-    url = f"http://dados.cvm.gov.br/dados/FIDC/DOC/INF_MENSAL/DADOS/inf_mensal_fidc_{ano:02d}{mes:02d}.zip"
-    if proxy:
+
+    # Validação do ano
+    if ano < 2000 or ano > 2100:
+        raise ValueError(f"Ano inválido: {ano}")
+
+    # Validação da tabela
+    tabelas_validas = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
+    if tabela.upper() not in tabelas_validas:
+        raise ValueError(f"Tabela inválida. Use uma de: {tabelas_validas}")
+
+    # Define a URL base
+    if ano <= 2024:
+        url = f"https://dados.cvm.gov.br/dados/FIDC/DOC/INF_MENSAL/DADOS/HIST/inf_mensal_fidc_{ano:02d}.zip"
+    else:
+        # Para anos mais recentes, pode ser necessário baixar mês a mês
+        url = f"http://dados.cvm.gov.br/dados/FIDC/DOC/INF_MENSAL/DADOS/inf_mensal_fidc_{ano:02d}"
+
+    try:
+        # Baixa o arquivo ZIP
+        resposta = _get_response(url, proxy=proxy)
+
+        if resposta.status_code != 200:
+            # Se falhou, tenta o formato alternativo para anos recentes
+            if ano > 2024:
+                return _baixar_fidc_mensal(ano, tabela, subtabela, proxy, use_polars)
+            else:
+                raise ValueError(f"Erro ao baixar dados do ano {ano}: Status {resposta.status_code}")
+
+        # Processa cada mês
+        resultados = []
+        meses = list(range(1, 13))
+
+        print(f" Processando {len(meses)} meses...")
+        for mes in tqdm(meses, desc="Processando meses"):
+            try:
+                if tabela.upper() == "X":
+                    arquivo = f"inf_mensal_fidc_tab_{tabela}_{subtabela}_{ano:02d}{mes:02d}.csv"
+                else:
+                    arquivo = f"inf_mensal_fidc_tab_{tabela}_{ano:02d}{mes:02d}.csv"
+
+                df_mes = _ler_zip_files(resposta, arquivo)
+                resultados.append(df_mes)
+
+            except FileNotFoundError as e:
+                print(f" Mês {mes:02d}/{ano}: {e}")
+                continue
+            except Exception as e:
+                print(f" Erro no mês {mes:02d}/{ano}: {e}")
+                continue
+
+        if not resultados:
+            raise ValueError(f"Nenhum dado encontrado para o ano {ano}")
+
+        # Concatena todos os meses
+        df_final = pl.concat(resultados)
+
+        end = time.time()
+        print(f" Finalizado em {round((end - start) / 60, 2)} minutos")
+        print(f" Total de registros: {len(df_final)}")
+
+        # Retorna no formato solicitado
+        if use_polars:
+            return df_final
+        else:
+            return df_final.to_pandas()
+
+    except requests.exceptions.Timeout:
+        raise TimeoutError(f" Timeout ao baixar dados de FIDC {ano}")
+    except requests.exceptions.ConnectionError:
+        raise ConnectionError(f" Erro de conexão para FIDC {ano}")
+    except Exception as e:
+        raise Exception(f" Erro ao processar FIDC {ano}: {e!s}")
+
+
+def _baixar_fidc_mensal(
+    ano: int, tabela: str, subtabela: int, proxy: dict[str, str] | None = None, use_polars: bool = True
+) -> pl.DataFrame:
+    """
+    Função auxiliar para baixar dados mensais individualmente (anos > 2024).
+    """
+    resultados = []
+    url_base = f"http://dados.cvm.gov.br/dados/FIDC/DOC/INF_MENSAL/DADOS/inf_mensal_fidc_{ano:02d}"
+
+    for mes in tqdm(range(1, 13), desc="Baixando meses"):
         try:
-            dados_cvm = requests.get(url, proxies=proxy, verify=False)
-        except AttributeError:
-            raise ValueError("Necessário informar proxy correta.")
+            url = f"{url_base}{mes:02d}.zip"
+            resposta = _get_response(url, proxy=proxy)
+
+            if resposta.status_code != 200:
+                print(f" Mês {mes:02d} não disponível (status {resposta.status_code})")
+                continue
+
+            if tabela.upper() == "X":
+                arquivo = f"inf_mensal_fidc_tab_{tabela}_{subtabela}_{ano:02d}{mes:02d}.csv"
+            else:
+                arquivo = f"inf_mensal_fidc_tab_{tabela}_{ano:02d}{mes:02d}.csv"
+
+            df_mes = _ler_zip_files(resposta, arquivo)
+            resultados.append(df_mes)
+
+        except Exception as e:
+            print(f" Erro no mês {mes:02d}: {e}")
+            continue
+
+    if not resultados:
+        raise ValueError(f"Nenhum dado encontrado para o ano {ano}")
+
+    df_final = pl.concat(resultados)
+
+    if use_polars:
+        return df_final
     else:
-        dados_cvm = requests.get(url)
-    if str(dados_cvm) == "<Response [404]>":
-        raise ValueError("Não há dados para esta data. Response [404]")
-    if tabela.upper() == "X":
-        arquivo = f"inf_mensal_fidc_tab_{tabela}_{subtabela}_{ano:02d}{mes:02d}.csv"
-    else:
-        arquivo = f"inf_mensal_fidc_tab_{tabela}_{ano:02d}{mes:02d}.csv"
-    zf = zipfile.ZipFile(io.BytesIO(dados_cvm.content))
-    zf = zf.open(arquivo)
-    lines = zf.readlines()
-    lines = [i.strip().decode("ISO-8859-1").split(";") for i in lines]
-    end = time.time()
-    print(f"Finalizado em {round((end - start) / 60, 2)} minutos")
-    return pd.DataFrame(lines[1:], columns=lines[0])
+        return df_final.to_pandas()
