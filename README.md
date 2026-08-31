@@ -56,8 +56,8 @@ import comparar_fundos_br as comp
 
 informe_diario_fundos_historico = comp.fundosbr(anos=range(2021,2022), #somente 2021
                                                   meses=range(1,3), #somente Jan e Fev
-                                                  num_minimo_cotistas=10, 
-                                                  patriminio_liquido_minimo=1e6, 
+                                                  num_minimo_cotistas=10,
+                                                  patriminio_liquido_minimo=1e6,
                                                   proxy=proxies,
                                                   output_format='pandas')
 informe_diario_fundos_historico.head()
@@ -73,9 +73,7 @@ informe_diario_fundos_historico.head()
 | 2022-01-03 00:00:00 | 40.905.548/0001-03 |         17 | 28.068.429,23   | 1.083,46   | 28.207.991,86  | 35.200,00   | 0,00       |
 ```
 
-Os dados históricos dos fundos contém alguns problemas como: repetição do mesmo fundo em classes iguais com nomes diferentes e
-alterações em nome das colunas ou, até mesmo, ausência de alguma coluna. Para contornar, filtramos os tipos de fundos como:
-`'FI', 'FIF' ou'CLASSES - FIF` e não retornamos com essa coluna, mas a informação pode ser obtida a posteriori, veja a seguir.
+Os dados históricos dos fundos contém alguns problemas como: repetição do mesmo fundo em classes iguais com nomes diferentes e alterações em nome das colunas ou, até mesmo, ausência de alguma coluna. Para contornar, filtramos os tipos de fundos como: `'FI', 'FIF' ou'CLASSES - FIF` e não retornamos com essa coluna, mas a informação pode ser obtida a posteriori, veja a seguir.
 
 Todas as informações adicionais sobre os fundos como: classificação ANBIMA, classe, Denominação Social (Nome do Fundo), Condomínio, Custodiante e outras estão disponíveis no cadastro dos fundos. Para obte-lo, basta invocar a função abaixo:
 
@@ -83,6 +81,7 @@ Todas as informações adicionais sobre os fundos como: classificação ANBIMA, 
 cadastro = comp.get_cadastro_fundos(classe=comp.get_classes(), proxy=proxies,
                                     output_format='polars')
 ```
+
 Caso deseje filtrar apenas algunas classes de Fundos, siga o exemplo abaixo que filtra por fundos de ações.
 
 ```python
@@ -99,8 +98,7 @@ Para cruzar as informações diárias e de cadastro, execute:
 informe_completo = comp.mesclar_bases(cadastro, informe_diario_fundos_historico)
 ```
 
-Os estudos com os fundos são executados sobre uma série temporal das cotas diárias dos fundos. Com `informe_completo` pode-se
-filtrar os fundos que interessam para sua análise. Uma coluna adicional foi criada para conjugar CNPJ do Fundo a seu Nome (CNPJ - Nome).
+Os estudos com os fundos são executados sobre uma série temporal das cotas diárias dos fundos. Com `informe_completo` pode-se filtrar os fundos que interessam para sua análise. Uma coluna adicional foi criada para conjugar CNPJ do Fundo a seu Nome (CNPJ - Nome).
 
 Caso esteja utilizando `polars`, obtenha a série temporal da seguinte forma:
 
@@ -118,18 +116,17 @@ serie_temporal_fundos = informe_completo.pivot_table(index="DT_COMPTC", columns=
 serie_temporal_fundos = serie_temporal_fundos.sort_values(['DT_COMPTC'])
 ```
 
-Para obter o retorno dos Fundos, chame a função `calcula_risco_retorno_fundos` passando os dados dos fundos que acabou de obter.
-Caso esteja trabalhando até aqui com `polars`, deve-se mudar para `pandas` usando comando `serie_temporal_fundos.to_pandas().set_index('DT_COMPTC')`, pois as demais funções não foram implementadas em `polars`.
+Para obter o retorno dos Fundos, chame a função `calcula_risco_retorno_fundos` passando os dados dos fundos que acabou de obter. Caso esteja trabalhando até aqui com `polars`, deve-se mudar para `pandas` usando comando `serie_temporal_fundos.to_pandas().set_index('DT_COMPTC')`, pois as demais funções não foram implementadas em `polars`.
 
 ```python
-(risco_retorno, rentabilidade_fundos_diaria, 
+(risco_retorno, rentabilidade_fundos_diaria,
     cotas_normalizadas, rentabilidade_fundos_acumulada,
     rentabilidade_acumulada_por_ano) = comp.calcula_risco_retorno_fundos(serie_temporal_fundos)
 ```
 
 O primeiro dataframe indica tanto o risco (volatidade padrão) de cada fundo, por CNPJ - Nome, quanto sua rentabilidade, ambos anualizados. O segundo dataframe provê os retornos diários de cada fundo. Já o terceiro dataframe retorna o valor das cotas dos fundos normalizadas no período selecionado. Os demais dataframes retornam as rentabilidades acumulada por ano e a rentabilidade total no período, respectivamente.
 
-A forma mais eficiente para comparar o desempenho dos Fundos é usando gráficos. Você pode plotar o risco x retorno dos Fundos e comparar com seu benchmark ou sua carteira de investimentos. Aqui não vamos calcular pra você a rentabilidade da sua carteira, apenas usar esse dado para comparar com  os fundos selecionados. Veja o exemplo:
+A forma mais eficiente para comparar o desempenho dos Fundos é usando gráficos. Você pode plotar o risco x retorno dos Fundos e comparar com seu benchmark ou sua carteira de investimentos. Aqui não vamos calcular pra você a rentabilidade da sua carteira, apenas usar esse dado para comparar com os fundos selecionados. Veja o exemplo:
 
 ```python
 risco_retorno_filtrado = risco_retorno[
@@ -153,6 +150,7 @@ plt.ylim(-10, 140)
 plt.xlim(-3, 60)
 plt.show()
 ```
+
 <center>
 <img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/figura3.png" style="width:100%;"/>
 </center>
@@ -163,18 +161,18 @@ A função `plotar_evolucao` encontra os Fundos tanto por CNPJ quanto por Nome, 
 
 Para facilitar a comparação, você pode personalizar o gráfico para destacar o melhor e o pior Fundo, além de plotar o seu benchmark.
 
-Os benchmarks disponíveis são: CDI, IMA-S, IMA-B5, IMA-B5+, IMA-B5 P2, IRFM, IRFM P2, IHFA, Ibovespa, DIVO11 (IDIV), SP500 e Ações diversas listadas na B3.
-A função retorna os valores de cada ticker, retorno diário e retorno acumulado no período indicado.
+Os benchmarks disponíveis são: CDI, IMA-S, IMA-B5, IMA-B5+, IMA-B5 P2, IRFM, IRFM P2, IHFA, Ibovespa, DIVO11 (IDIV), SP500 e Ações diversas listadas na B3. A função retorna os valores de cada ticker, retorno diário e retorno acumulado no período indicado.
 
 ```python
-data_inicio, data_fim = serie_temporal_fundos.index[0], serie_temporal_fundos.index[-1]
+dados = comp.DadosFinanceiros(proxy=None)
 
-cdi = comp.get_benchmarks(data_inicio, data_fim, benchmark="cdi", metodo_cdi='anbima', proxy=proxies)
-ibov = comp.get_benchmarks(data_inicio, data_fim, benchmark="ibov", proxy=proxies)
-sp500 = comp.get_benchmarks(data_inicio, data_fim, benchmark="sp500", proxy=proxies)
-idiv = comp.get_benchmarks(data_inicio, data_fim, benchmark="divo11", proxy=proxies)
-acoes = comp.get_stocks(['VALE3', 'PETR4'], data_inicio, data_fim, proxy=proxies)
-df_benchmarks = pd.concat([cdi, ibov, sp500, idiv, acoes], axis=1).sort_index()
+data_inicio, data_fim = "2008-01-01", "2026-08-01"
+
+ptax = dados.cambio_ptax(data_inicio, data_fim, compra=False)
+acoes_etfs = dados.stocks(["PETR4", "VALE3", "IVVB11"], data_inicio, data_fim)
+multi = dados.benchmarks(data_inicio, data_fim, benchmark=["CDI", "IBOV", "sp500"], metodo_cdi="bacen")
+
+df_benchmarks = pd.concat([multi, acoes_etfs], axis=1).sort_index() #cuidado com missing values
 
 data = comp.plotar_evolucao(
                 cotas_normalizadas*100,
@@ -235,7 +233,7 @@ melhores.head()
 | 04.892.107/0001-42 // BRADESCO H FIF - CLASSE DE INVESTIMENTO EM AÇÕES VALE DO RIO DOCE - RESP LIMITADA      |    123.724 |
 ```
 
-Uma forma eficiente de avaliar o desempenho dos fundos, é por meio de janelas móveis. Ao invocar a função `plotar_rentabilidade_janela_movel` informando a série temporal das cotas diárias, os benchmarks específicos e a janela de tempo ou *holding period (HP)*, veja:
+Uma forma eficiente de avaliar o desempenho dos fundos, é por meio de janelas móveis. Ao invocar a função `plotar_rentabilidade_janela_movel` informando a série temporal das cotas diárias, os benchmarks específicos e a janela de tempo ou _holding period (HP)_, veja:
 
 ```python
 import random, matplotlib
@@ -243,9 +241,10 @@ random.seed(12)
 matplotlib.style.use("fivethirtyeight")
 seleciona_um_fundo_aleatoriamente = random.sample(serie_temporal_fundos.iloc[0].dropna().index.tolist(), 1)
 
-comp.plotar_rentabilidade_janela_movel(serie_temporal_fundos[seleciona_um_fundo_aleatoriamente], 
+comp.plotar_rentabilidade_janela_movel(serie_temporal_fundos[seleciona_um_fundo_aleatoriamente],
                                        3*252, df_benchmarks[['CDI', 'IBOV']] )
 ```
+
 No exemplo acima, um fundo foi sorteado aleatoriamente; mas você pode ter outro critério para selecioná-lo. Importante a série dde benchmarks ter a mesma janela histórica disponível. **O HP escolhido foi de 3 anos, repare se o fundo selecionado tem dado suficiente para fazer essa análise.**
 
 <center>
@@ -263,7 +262,7 @@ comp.plotar_heatmap_rentabilidade(serie_temporal_fundos[seleciona_um_fundo_aleat
 style="width:100%;"/>
 </center>
 
-De forma complementar ao gráfico *heatmap* anterior, pode ser exibido uma figura que compara os retornos do período com seu benchmark. A última coluna *Ultrapassa Retorno CDI* (CDI escolhido no exemplo) representa o número de vezes que o fundo ultrapassou o benchmark sobre o total de períodos (se mensal, doze periodos).
+De forma complementar ao gráfico _heatmap_ anterior, pode ser exibido uma figura que compara os retornos do período com seu benchmark. A última coluna _Ultrapassa Retorno CDI_ (CDI escolhido no exemplo) representa o número de vezes que o fundo ultrapassou o benchmark sobre o total de períodos (se mensal, doze periodos).
 
 ```python
 comp.plotar_heatmap_comparar_benchmark(serie_temporal_fundos[seleciona_um_fundo_aleatoriamente],
@@ -276,8 +275,7 @@ comp.plotar_heatmap_comparar_benchmark(serie_temporal_fundos[seleciona_um_fundo_
 style="width:100%;"/>
 </center>
 
-Agora fazendo de forma mais objetiva e menos visual, pode-se avaliar o desempenho de vários fundos com diversos benchmarks simultaneamente estabelecendo um limite de corte para exibir aqueles que superem os benchmarks em 60% das vezes, por exemplo.
-Veja o exemplo abaixo com 15 fundos e 3 benchmarks, em janela de 3 anos com limite de 60%:
+Agora fazendo de forma mais objetiva e menos visual, pode-se avaliar o desempenho de vários fundos com diversos benchmarks simultaneamente estabelecendo um limite de corte para exibir aqueles que superem os benchmarks em 60% das vezes, por exemplo. Veja o exemplo abaixo com 15 fundos e 3 benchmarks, em janela de 3 anos com limite de 60%:
 
 ```python
 quinze_fundos_aleatorios = random.sample(serie_temporal_fundos_completo.iloc[0].dropna().index.tolist(), 15)
@@ -285,6 +283,7 @@ fundos_selecionados_por_corte = comp.supera_benchmark(serie_temporal_fundos[quin
                                                          df_benchmarks[['SP500', 'IBOV', 'CDI']], 3*252, 0.6)
 fundos_selecionados_por_corte
 ```
+
 ```
 | Fundo                                                                                                                   |   Supera IBOV (%) |   Supera CDI (%) |
 |-------------------------------------------------------------------------------------------------------------------------|-------------------|------------------|
@@ -292,6 +291,7 @@ fundos_selecionados_por_corte
 | 00.977.449/0001-04 // BNP PARIBAS GERDAU PREVIDÊNCIA 1 CLASSE DE INVESTIMENTO RENDA FIXA CREDITO PRIVADO RESP LIMITADA  |           66.4209 |          97.8812 |
 | 03.545.843/0001-61 // CARGILLPREV CD PREVIDENCIÁRIO MULTIMERCADO CRÉDITO PRIVADO - FUNDO DE INVESTIMENTO                |           66.2223 |          85.8377 |
 ```
+
 Repare que apenas 3 fundos superaram seus benchmarks, exceto SP500, mais que 60% das vezes em janela móvel de 3 anos.
 
 Complementando, a análise acima, veja quantas vezes esses fundos ultrapassaram, em média, seus benchmarks e também quanto, em média, ficaram abaixo dos benchmarks. Além disso, exibe quanto o fundo superou, em média, seu benchmark no período.
@@ -304,6 +304,7 @@ indice_superacao = comp.qto_supera_benchmark(serie_temporal_fundos[fundos_seleci
                                              df_benchmarks[['IBOV', 'CDI']], janela_movel, corte_benchmark, bench_corte)
 indice_superacao
 ```
+
 ```
 | Fundo                                                                                                                   |   % de vezes, em média, acima IBOV (%) |   % de vezes, em média, abaixo IBOV (%) |   % do IBOV, em média |   % de vezes, em média, acima CDI (%) |   % de vezes, em média, abaixo CDI (%) |   % do CDI, em média |
 |-------------------------------------------------------------------------------------------------------------------------|----------------------------------------|-----------------------------------------|-----------------------|---------------------------------------|----------------------------------------|----------------------|
@@ -329,4 +330,4 @@ for ano in [2020, 2021]:
             informe_fidcs_all = pd.concat([informe_fidcs_all, informe_fidcs])
 ```
 
-*Os fundos exibidos acima são apenas exemplos mostrados aleatoriamente, não é recomendação de investimento ou desinvestimento.*
+_Os fundos exibidos acima são apenas exemplos mostrados aleatoriamente, não é recomendação de investimento ou desinvestimento._
