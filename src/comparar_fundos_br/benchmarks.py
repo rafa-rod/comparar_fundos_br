@@ -182,11 +182,12 @@ class DadosFinanceiros:
             cdi = imas.to_pandas().set_index("Data de Referência")
         elif metodo_cdi.lower() == "bacen":
             bruto = self._consulta_sgs_bacen(codigo_serie=12, data_inicio=inicio, data_fim=fim)
-            cdi = bruto.set_index("data")
-            cdi = cdi[(cdi.index >= inicio) & (cdi.index <= fim)] / 100
-            cdi.columns = ["CDI"]
-            cdi["Retorno CDI"] = cdi["CDI"].pct_change()
-            cdi["Retorno Acumulado CDI"] = (1 + cdi["Retorno CDI"]).cumprod() - 1
+            taxa = bruto.set_index("data")
+            taxa = taxa[(taxa.index >= inicio) & (taxa.index <= fim)].iloc[:, 0] / 100
+            cdi = pd.DataFrame(index=taxa.index)
+            cdi["CDI"] = (1 + taxa).cumprod()          # numero-indice, como os outros ramos
+            cdi["Retorno CDI"] = taxa                  # a taxa diaria E o retorno
+            cdi["Retorno Acumulado CDI"] = cdi["CDI"] - 1
         else:
             raise ValueError("Método não permitido")
         return cdi
