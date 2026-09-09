@@ -185,7 +185,7 @@ class DadosFinanceiros:
             cdi = bruto.set_index("data")
             cdi = cdi[(cdi.index >= inicio) & (cdi.index <= fim)] / 100
             cdi.columns = ["CDI"]
-            cdi["Retorno CDI"] = cdi["CDI"]
+            cdi["Retorno CDI"] = cdi["CDI"].pct_change()
             cdi["Retorno Acumulado CDI"] = (1 + cdi["Retorno CDI"]).cumprod() - 1
         else:
             raise ValueError("Método não permitido")
