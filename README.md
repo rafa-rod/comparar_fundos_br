@@ -151,9 +151,7 @@ plt.xlim(-3, 60)
 plt.show()
 ```
 
-<center>
-<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/figura3.png" style="width:100%;"/>
-</center>
+![Figura3](https://raw.githubusercontent.com/rafa-rod/comparar_fundos_br/main/media/figura3.png)
 
 Uma outra forma de comparação é utilizando as cotas iniciando em um valor inicial de 1, arbitrário. Caso deseje visualizar a evolução do investimento, basta multiplicar o dataframe, assim a comparação fica facilitada.
 
@@ -187,9 +185,7 @@ plt.legend(frameon=False, loc="upper right")
 plt.show()
 ```
 
-<center>
-<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/figura1.png" style="width:100%;"/>
-</center>
+![Figura1](https://raw.githubusercontent.com/rafa-rod/comparar_fundos_br/main/media/figura1.png)
 
 ```python
 data = comp.plotar_evolucao(
@@ -211,9 +207,7 @@ plt.legend(frameon=False, loc="upper center")
 plt.show()
 ```
 
-<center>
-<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/figura2.png" style="width:100%;"/>
-</center>
+![Figura2](https://raw.githubusercontent.com/rafa-rod/comparar_fundos_br/main/media/figura2.png)
 
 Ainda é possível listar os Fundos de maior e pior desempenho:
 
@@ -247,9 +241,7 @@ comp.plotar_rentabilidade_janela_movel(serie_temporal_fundos[seleciona_um_fundo_
 
 No exemplo acima, um fundo foi sorteado aleatoriamente; mas você pode ter outro critério para selecioná-lo. Importante a série dde benchmarks ter a mesma janela histórica disponível. **O HP escolhido foi de 3 anos, repare se o fundo selecionado tem dado suficiente para fazer essa análise.**
 
-<center>
-<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/plotar_rentabilidade_janela_movel.png" style="width:100%;"/>
-</center>
+![plotar_rentabilidade_janela_movel](https://raw.githubusercontent.com/rafa-rod/comparar_fundos_br/main/media/plotar_rentabilidade_janela_movel.png)
 
 Outra forma de avaliação é uma visão mais geral em períodos específicos padronizados como: mensal (M), trimestral (Q), semestral (sem) ou anual (Y) destacando as cores do retornos mais positivos e negativos. Basta informar os retornos diários e selecionar o período:
 
@@ -257,10 +249,7 @@ Outra forma de avaliação é uma visão mais geral em períodos específicos pa
 comp.plotar_heatmap_rentabilidade(serie_temporal_fundos[seleciona_um_fundo_aleatoriamente], period='M')
 ```
 
-<center>
-<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/plotar_heatmap_rentabilidade.png"
-style="width:100%;"/>
-</center>
+![plotar_heatmap_rentabilidade](https://raw.githubusercontent.com/rafa-rod/comparar_fundos_br/main/media/plotar_heatmap_rentabilidade.png)
 
 De forma complementar ao gráfico _heatmap_ anterior, pode ser exibido uma figura que compara os retornos do período com seu benchmark. A última coluna _Ultrapassa Retorno CDI_ (CDI escolhido no exemplo) representa o número de vezes que o fundo ultrapassou o benchmark sobre o total de períodos (se mensal, doze periodos).
 
@@ -270,10 +259,7 @@ comp.plotar_heatmap_comparar_benchmark(serie_temporal_fundos[seleciona_um_fundo_
                                           "M")
 ```
 
-<center>
-<img src="https://github.com/rafa-rod/comparar_fundos_br/blob/main/media/plotar_heatmap_comparar_benchmark.png"
-style="width:100%;"/>
-</center>
+![plotar_heatmap_comparar_benchmark](https://raw.githubusercontent.com/rafa-rod/comparar_fundos_br/main/media/plotar_heatmap_comparar_benchmark.png)
 
 Agora fazendo de forma mais objetiva e menos visual, pode-se avaliar o desempenho de vários fundos com diversos benchmarks simultaneamente estabelecendo um limite de corte para exibir aqueles que superem os benchmarks em 60% das vezes, por exemplo. Veja o exemplo abaixo com 15 fundos e 3 benchmarks, em janela de 3 anos com limite de 60%:
 
