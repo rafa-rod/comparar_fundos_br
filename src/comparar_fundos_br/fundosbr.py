@@ -75,7 +75,7 @@ def _ler_zip_files(resposta, arquivo: str) -> pl.DataFrame:
                 if not lines:
                     raise ValueError(f"Arquivo {arquivo} está vazio")
 
-                fundos = pl.DataFrame(lines[1:], schema=lines[0])
+                fundos = pl.DataFrame(lines[1:], schema=lines[0], orient="row")
                 return fundos
 
         except zipfile.BadZipFile:
@@ -242,7 +242,7 @@ def fundosbr(
     if isinstance(meses, int):
         meses = [meses]
     else:
-        anos = list(anos)
+        meses = list(meses)
     informe_diario_fundos_historico = pl.DataFrame()
     for ano in anos:
         for mes in meses:
