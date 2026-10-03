@@ -41,7 +41,6 @@ protobuf = "^7.36.0"
 yfinance = "^1.6.0"
 tesouro-direto-br = "^0.3.5"
 seaborn = ">=0.13.2"
-pyarrow = ">=17.0.0"
 tqdm = ">=4.66.0"
 
 [tool.poetry.group.dev.dependencies]

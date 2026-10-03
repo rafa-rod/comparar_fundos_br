@@ -10,6 +10,8 @@ from datetime import datetime
 
 import pandas as pd
 import polars as pl
+
+from ._conversao import _para_pandas
 import requests
 from tqdm import tqdm
 
@@ -150,7 +152,7 @@ def get_cadastro_fundos(
         )
     fundos_filtrado = fundos_filtrado.with_columns(pl.col("Denominacao_Social").str.to_uppercase())
     if output_format.lower() == "pandas":
-        fundos_filtrado = fundos_filtrado.to_pandas()
+        fundos_filtrado = _para_pandas(fundos_filtrado)
     print(f"Cadastro finalizado em {round((time.time() - start) / 60, 2)} minutos")
     return fundos_filtrado
 
@@ -173,7 +175,7 @@ def mesclar_bases(
         ((pl.col("CNPJ_FUNDO")) + " // " + (pl.col("Denominacao_Social"))).alias("CNPJ - Nome")
     )
     if output_format.lower() == "pandas":
-        return dados_completos_filtrados.to_pandas().set_index("DT_COMPTC").sort_index()
+        return _para_pandas(dados_completos_filtrados).set_index("DT_COMPTC").sort_index()
     else:
         return dados_completos_filtrados.sort("DT_COMPTC")
 
@@ -255,7 +257,7 @@ def fundosbr(
                 )
     print(f"Dados diários finalizados em {round((time.time() - start) / 60, 2)} minutos")
     if output_format.lower() == "pandas":
-        return informe_diario_fundos_historico.to_pandas().set_index("DT_COMPTC").sort_index()
+        return _para_pandas(informe_diario_fundos_historico).set_index("DT_COMPTC").sort_index()
     else:
         return informe_diario_fundos_historico.sort("DT_COMPTC")
 
@@ -388,7 +390,7 @@ def get_fidc(
         if use_polars:
             return df_final
         else:
-            return df_final.to_pandas()
+            return _para_pandas(df_final)
 
     except requests.exceptions.Timeout:
         raise TimeoutError(f" Timeout ao baixar dados de FIDC {ano}")
@@ -436,4 +438,4 @@ def _baixar_fidc_mensal(
     if use_polars:
         return df_final
     else:
-        return df_final.to_pandas()
+        return _para_pandas(df_final)

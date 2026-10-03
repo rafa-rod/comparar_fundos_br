@@ -168,9 +168,31 @@ class TestClass:
         assert por_nome.shape[1] == 3
         plotar_heatmap_rentabilidade(self.cotas[[FUNDOS[0]]], "M")
 
+    def test_para_pandas_sem_pyarrow(self):
+        import datetime as dt
+
+        import polars as pl
+
+        from comparar_fundos_br._conversao import _para_pandas
+
+        df = pl.DataFrame(
+            {
+                "data": [dt.datetime(2024, 1, 2), dt.datetime(2024, 1, 3)],
+                "cnpj": ["03.916.081/0001-62", None],
+                "cotistas": pl.Series([10, None], dtype=pl.Int32),
+                "cota": pl.Series([1.5, 2.0], dtype=pl.Float32),
+            }
+        )
+        convertido = _para_pandas(df)
+        assert list(convertido.columns) == ["data", "cnpj", "cotistas", "cota"]
+        assert pd.api.types.is_datetime64_any_dtype(convertido["data"])
+        assert convertido["cotistas"].isna().iloc[1] and convertido["cotistas"].iloc[0] == 10
+        assert convertido["cota"].dtype == np.float32
+        assert convertido["cnpj"].iloc[0] == "03.916.081/0001-62"
+
     # ==================== FUNDOS CVM (SEM REDE) ====================
     def test_fundosbr(self, fake_cvm):
-        informe = cfb.fundosbr(2024, 1)  # conversão polars -> pandas exige pyarrow
+        informe = cfb.fundosbr(2024, 1)  # conversão polars -> pandas sem pyarrow
         assert isinstance(informe, pd.DataFrame)
         assert informe.index.name == "DT_COMPTC"
         assert set(informe["CNPJ_FUNDO"]) == {"03.916.081/0001-62", "06.916.384/0001-73"}  # FII fora
