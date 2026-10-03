@@ -14,6 +14,8 @@ import seaborn as sns
 import tesouro_direto_br as tesouro_direto
 import yfinance as yf
 
+from ._conversao import _para_pandas
+
 warnings.filterwarnings("ignore")
 
 pd.set_option("display.float_format", lambda x: "%.6f" % x)
@@ -179,7 +181,7 @@ class DadosFinanceiros:
             imas = imas.rename({"Número Índice": "CDI"})
             imas = imas.with_columns(pl.col("CDI").pct_change().alias("Retorno CDI"))
             imas = imas.with_columns(((pl.col("Retorno CDI") + 1).cum_prod() - 1).alias("Retorno Acumulado CDI"))
-            cdi = imas.to_pandas().set_index("Data de Referência")
+            cdi = _para_pandas(imas).set_index("Data de Referência")
         elif metodo_cdi.lower() == "bacen":
             bruto = self._consulta_sgs_bacen(codigo_serie=12, data_inicio=inicio, data_fim=fim)
             taxa = bruto.set_index("data")
@@ -227,7 +229,7 @@ class DadosFinanceiros:
             & (pl.col("Data de Referência") <= pd.to_datetime(data_fim))
         )
         indice = indice.rename({"Número Índice": benchmark.upper()})
-        return indice.to_pandas().set_index("Data de Referência")
+        return _para_pandas(indice).set_index("Data de Referência")
 
     # ------------------------------------------------------------------
     # Câmbio PTAX
