@@ -4,6 +4,10 @@ import matplotlib
 
 matplotlib.use("Agg")  # sem janela: CI e terminal
 
+import io
+import sys
+import zipfile
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -39,8 +43,10 @@ def _cotas(seed=0, inicio="2021-01-04", fim="2023-12-29"):
 
 
 class _FakeResponse:
-    def __init__(self, payload):
+    def __init__(self, payload=None, content=b"", status_code=200):
         self._payload = payload
+        self.content = content
+        self.status_code = status_code
 
     def json(self):
         return self._payload
@@ -61,6 +67,27 @@ def fake_sgs(monkeypatch):
 
     monkeypatch.setattr(cfb.benchmarks.requests, "get", fake_get)
     monkeypatch.setattr(cfb.benchmarks.time, "sleep", lambda s: None)
+
+
+INFORME_DIARIO = """TP_FUNDO_CLASSE;CNPJ_FUNDO_CLASSE;ID_SUBCLASSE;DT_COMPTC;VL_TOTAL;VL_QUOTA;VL_PATRIM_LIQ;CAPTC_DIA;RESG_DIA;NR_COTST
+CLASSES - FIF;03.916.081/0001-62;;2024-01-02;1000000.00;1.500000;990000.00;0.00;0.00;150
+CLASSES - FIF;03.916.081/0001-62;;2024-01-03;1001000.00;1.501000;991000.00;0.00;0.00;151
+CLASSES - FIF;06.916.384/0001-73;;2024-01-02;500000.00;2.000000;480000.00;0.00;0.00;5
+CLASSES - FIF;06.916.384/0001-73;;2024-01-03;500100.00;2.001000;480100.00;0.00;0.00;5
+FII;11.111.111/0001-11;;2024-01-02;100.00;1.000000;100.00;0.00;0.00;1000
+"""
+
+
+@pytest.fixture
+def fake_cvm(monkeypatch):
+    """Simula o zip do informe diário da CVM (jan/2024)."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zf:
+        zf.writestr("inf_diario_fi_202401.csv", INFORME_DIARIO.encode("ISO-8859-1"))
+    modulo = sys.modules["comparar_fundos_br.fundosbr"]
+    monkeypatch.setattr(
+        modulo, "_get_response", lambda url, proxy=None: _FakeResponse(content=buffer.getvalue())
+    )
 
 
 class TestClass:
@@ -141,6 +168,19 @@ class TestClass:
         assert por_nome.shape[1] == 3
         plotar_heatmap_rentabilidade(self.cotas[[FUNDOS[0]]], "M")
 
+    # ==================== FUNDOS CVM (SEM REDE) ====================
+    def test_fundosbr(self, fake_cvm):
+        informe = cfb.fundosbr(2024, 1)  # conversão polars -> pandas exige pyarrow
+        assert isinstance(informe, pd.DataFrame)
+        assert informe.index.name == "DT_COMPTC"
+        assert set(informe["CNPJ_FUNDO"]) == {"03.916.081/0001-62", "06.916.384/0001-73"}  # FII fora
+        assert informe["VL_QUOTA"].dtype == np.float32
+
+        filtrado = cfb.fundosbr([2024], range(1, 2), num_minimo_cotistas=10, output_format="polars")
+        assert filtrado["CNPJ_FUNDO"].unique().to_list() == ["03.916.081/0001-62"]
+        por_cnpj = cfb.fundosbr(2024, 1, cnpj="06916384000173")
+        assert set(por_cnpj["CNPJ_FUNDO"]) == {"06.916.384/0001-73"}
+
     # ==================== BENCHMARKS (SEM REDE) ====================
     def test_cdi_bacen(self, fake_sgs):
         cdi = DadosFinanceiros().cdi("2024-01-01", "2024-03-31", metodo_cdi="bacen")
@@ -168,7 +208,7 @@ def test_fundos_cvm():
 
 @pytest.mark.network
 def test_fidc_fip():
-    assert not cfb.get_fidc(2024, 6).empty
+    assert not cfb.get_fidc(2024).empty
     assert not cfb.get_fip(2024).empty
 
 
