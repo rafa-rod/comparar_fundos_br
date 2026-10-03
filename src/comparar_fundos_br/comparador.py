@@ -83,7 +83,7 @@ def calcula_risco_retorno_fundos(
     ).T
     retorno_periodo_anualizado.columns = ["rentabilidade"]
 
-    rentabilidade_acumulada_por_ano = rentabilidade_fundos_acumulada.groupby(pd.Grouper(freq="Y")).last(1).T
+    rentabilidade_acumulada_por_ano = rentabilidade_fundos_acumulada.groupby(pd.Grouper(freq="YE")).last().T
     rentabilidade_acumulada_por_ano.columns = [str(x)[:4] for x in rentabilidade_acumulada_por_ano.columns]
 
     volatilidade_fundos = rentabilidade_fundos_diaria.std().to_frame() * np.sqrt(252)
