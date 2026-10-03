@@ -3,8 +3,26 @@ name = "comparar_fundos_br"
 version = "0.2.4"
 description = "Obter dados de fundos de investimento"
 authors = ["Rafael Rodrigues <rafael.rafarod@gmail.com>"]
+license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/rafa-rod/comparar_fundos_br.git"
+repository = "https://github.com/rafa-rod/comparar_fundos_br"
+homepage = "https://github.com/rafa-rod/comparar_fundos_br"
+keywords = ["fundos-de-investimento", "cvm", "fip", "fidc", "benchmarks", "cdi",
+            "ibovespa", "anbima", "finance", "brasil", "quant"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Portuguese (Brazilian)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+packages = [
+    { include = "comparar_fundos_br", from = "src" }
+]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.14"
@@ -21,8 +39,36 @@ pillow = "^12.3.0"
 lxml = "^6.1.2"
 protobuf = "^7.36.0"
 yfinance = "^1.6.0"
-tesouro-direto-br = "^0.3.4"
+tesouro-direto-br = "^0.3.5"
+seaborn = ">=0.13.2"
+tqdm = ">=4.66.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.2"
+pytest-cov = "^6.0.0"
+twine = ">=6.0"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.run]
+branch = true
+source = ["src/comparar_fundos_br"]
+
+[tool.coverage.report]
+show_missing = true
+ignore_errors = true
+omit = ["tests/*"]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if .debug:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "network: testes que requerem conexão com a internet",
+]
